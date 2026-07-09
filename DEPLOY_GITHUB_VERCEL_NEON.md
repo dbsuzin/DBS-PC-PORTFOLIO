@@ -149,6 +149,10 @@ PROBLEMAS COMUNS E SOLUÇÕES
 ❌ "Cannot find module 'prisma/config'"
 → Já foi corrigido (schema.prisma usa PostgreSQL).
 
+❌ "Vulnerable version of Next.js detected"
+→ **Já corrigido!** Atualizamos para Next.js 16.2.10 (a versão segura atual).
+→ Depois de atualizar o código, faça commit + push novamente.
+
 --------------------------------------------------------------------------------
 PRÓXIMOS PASSOS APÓS DEPLOY
 --------------------------------------------------------------------------------
