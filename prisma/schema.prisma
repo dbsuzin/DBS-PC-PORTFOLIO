@@ -1,0 +1,46 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Company {
+  id        String      @id @default(cuid())
+  name      String
+  apiKey    String      @unique @default(cuid())
+  contact   String?
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+  computers Computer[]
+}
+
+model Computer {
+  id            String    @id @default(cuid())
+  companyId     String
+  company       Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  hostname      String
+  manufacturer  String?
+  model         String?
+  serialNumber  String?
+  cpu           String?
+  cpuCores      Int?
+  ramGB         Float?
+  diskGB        Float?
+  gpu           String?
+  os            String?
+  osVersion     String?
+  osInstallDate DateTime?
+  lastBootTime  DateTime?
+  ipAddress     String?
+  macAddress    String?
+  biosVersion   String?
+  notes         String?
+
+  lastSeen      DateTime  @default(now())
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}

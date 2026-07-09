@@ -1,0 +1,670 @@
+"use client";
+
+import React, { useState, useEffect } from 'react';
+import { 
+  Plus, Building2, Monitor, Copy, Trash2, Edit2, RefreshCw, 
+  Download, Key, X, FileSpreadsheet 
+} from 'lucide-react';
+import { toast } from 'sonner';
+import LoginModal from './components/LoginModal';
+
+interface Computer {
+  id: string;
+  hostname: string;
+  manufacturer?: string;
+  model?: string;
+  serialNumber?: string;
+  cpu?: string;
+  cpuCores?: number;
+  ramGB?: number;
+  diskGB?: number;
+  gpu?: string;
+  os?: string;
+  osVersion?: string;
+  osInstallDate?: string;
+  lastBootTime?: string;
+  ipAddress?: string;
+  macAddress?: string;
+  biosVersion?: string;
+  notes?: string;
+  lastSeen: string;
+}
+
+interface Company {
+  id: string;
+  name: string;
+  contact?: string;
+  apiKey: string;
+  createdAt: string;
+  _count?: { computers: number };
+  computers?: Computer[];
+}
+
+export default function PCPortfolio() {
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [companies, setCompanies] = useState<Company[]>([]);
+  const [selectedCompany, setSelectedCompany] = useState<Company | null>(null);
+  const [computers, setComputers] = useState<Computer[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [showCompanyModal, setShowCompanyModal] = useState(false);
+  const [showComputerModal, setShowComputerModal] = useState(false);
+  const [showAgentModal, setShowAgentModal] = useState(false);
+  const [editingCompany, setEditingCompany] = useState<Company | null>(null);
+  const [editingComputer, setEditingComputer] = useState<Computer | null>(null);
+  const [formData, setFormData] = useState({ name: '', contact: '' });
+  const [computerForm, setComputerForm] = useState<any>({});
+  const [searchTerm, setSearchTerm] = useState('');
+
+  // On first load, try to fetch data.
+  // If the API returns 401, we show the login modal.
+  // This fixes the "logs in but immediately logs out" bug.
+  useEffect(() => {
+    fetchCompanies();
+  }, []);
+
+  // Fetch all companies
+  const fetchCompanies = async () => {
+    try {
+      const res = await fetch('/api/companies');
+      
+      if (res.status === 401) {
+        setIsAuthenticated(false);
+        setIsLoading(false);
+        return;
+      }
+      
+      const data = await res.json();
+      setCompanies(data);
+      setIsAuthenticated(true);   // ← This was missing! Now login will stick
+    } catch (error) {
+      toast.error('Erro ao carregar empresas');
+      setIsAuthenticated(false);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Fetch computers for selected company
+  const fetchComputers = async (companyId: string) => {
+    try {
+      const res = await fetch(`/api/computers?companyId=${companyId}`);
+      const data = await res.json();
+      setComputers(data);
+    } catch (error) {
+      toast.error('Erro ao carregar computadores');
+    }
+  };
+
+  // Removed the useEffect that was re-calling fetchCompanies when isAuthenticated changed.
+  // It was causing the "login then immediately logout" loop.
+
+  // Select company
+  const selectCompany = (company: Company) => {
+    setSelectedCompany(company);
+    setSearchTerm('');
+    fetchComputers(company.id);
+  };
+
+  // Export to Excel
+  const exportToExcel = async () => {
+    if (!selectedCompany) return;
+
+    try {
+      const res = await fetch(`/api/export?companyId=${selectedCompany.id}`);
+      
+      if (!res.ok) throw new Error('Falha na exportação');
+
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${selectedCompany.name.replace(/\s+/g, '_')}_inventario.xlsx`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+
+      toast.success('Arquivo Excel gerado com sucesso!');
+    } catch (error) {
+      toast.error('Erro ao exportar para Excel');
+    }
+  };
+
+  // Open company modal
+  const openCompanyModal = (company?: Company) => {
+    if (company) {
+      setEditingCompany(company);
+      setFormData({ name: company.name, contact: company.contact || '' });
+    } else {
+      setEditingCompany(null);
+      setFormData({ name: '', contact: '' });
+    }
+    setShowCompanyModal(true);
+  };
+
+  // Save company
+  const saveCompany = async () => {
+    if (!formData.name.trim()) {
+      toast.error('Nome da empresa é obrigatório');
+      return;
+    }
+
+    try {
+      let res;
+      if (editingCompany) {
+        res = await fetch(`/api/companies/${editingCompany.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(formData),
+        });
+      } else {
+        res = await fetch('/api/companies', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(formData),
+        });
+      }
+
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || 'Erro ao salvar');
+      }
+
+      const savedCompany = await res.json();
+      await fetchCompanies();
+
+      if (selectedCompany && selectedCompany.id === savedCompany.id) {
+        setSelectedCompany(savedCompany);
+      } else if (!editingCompany) {
+        setSelectedCompany(savedCompany);
+        fetchComputers(savedCompany.id);
+      }
+
+      setShowCompanyModal(false);
+      toast.success(editingCompany ? 'Empresa atualizada!' : 'Empresa cadastrada com sucesso!');
+    } catch (error: any) {
+      toast.error(error.message || 'Erro ao salvar empresa');
+    }
+  };
+
+  // Delete company
+  const deleteCompany = async (company: Company) => {
+    if (!confirm(`Excluir empresa "${company.name}" e todos os seus computadores?`)) return;
+
+    try {
+      const res = await fetch(`/api/companies/${company.id}`, { method: 'DELETE' });
+      if (!res.ok) throw new Error();
+
+      await fetchCompanies();
+      if (selectedCompany?.id === company.id) {
+        setSelectedCompany(null);
+        setComputers([]);
+      }
+      toast.success('Empresa excluída');
+    } catch {
+      toast.error('Erro ao excluir empresa');
+    }
+  };
+
+  // Open computer modal
+  const openComputerModal = (computer?: Computer) => {
+    if (computer) {
+      setEditingComputer(computer);
+      setComputerForm({ ...computer });
+    } else {
+      setEditingComputer(null);
+      setComputerForm({
+        hostname: '', manufacturer: '', model: '', serialNumber: '',
+        cpu: '', cpuCores: '', ramGB: '', diskGB: '', gpu: '',
+        os: '', osVersion: '', osInstallDate: '', lastBootTime: '',
+        ipAddress: '', macAddress: '', biosVersion: '', notes: '',
+      });
+    }
+    setShowComputerModal(true);
+  };
+
+  // Save computer
+  const saveComputer = async () => {
+    if (!selectedCompany) return;
+    if (!computerForm.hostname?.trim()) {
+      toast.error('Hostname é obrigatório');
+      return;
+    }
+
+    try {
+      const payload = {
+        ...computerForm,
+        cpuCores: computerForm.cpuCores ? parseInt(computerForm.cpuCores) : null,
+        ramGB: computerForm.ramGB ? parseFloat(computerForm.ramGB) : null,
+        diskGB: computerForm.diskGB ? parseFloat(computerForm.diskGB) : null,
+      };
+
+      let res;
+      if (editingComputer) {
+        res = await fetch(`/api/computers/${editingComputer.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+      } else {
+        res = await fetch('/api/computers', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ...payload, apiKey: selectedCompany.apiKey }),
+        });
+      }
+
+      if (!res.ok) throw new Error(await res.text());
+
+      await fetchComputers(selectedCompany.id);
+      setShowComputerModal(false);
+      toast.success(editingComputer ? 'Computador atualizado!' : 'Computador adicionado!');
+    } catch (error) {
+      toast.error('Erro ao salvar computador');
+    }
+  };
+
+  // Delete computer
+  const deleteComputer = async (comp: Computer) => {
+    if (!confirm(`Excluir computador "${comp.hostname}"?`)) return;
+
+    try {
+      await fetch(`/api/computers/${comp.id}`, { method: 'DELETE' });
+      if (selectedCompany) await fetchComputers(selectedCompany.id);
+      toast.success('Computador removido');
+    } catch {
+      toast.error('Erro ao remover computador');
+    }
+  };
+
+  const copyToClipboard = (text: string, label: string) => {
+    navigator.clipboard.writeText(text);
+    toast.success(`${label} copiado!`);
+  };
+
+  const openAgentModal = () => setShowAgentModal(true);
+
+  // Format helpers
+  const formatDate = (dateString?: string) => {
+    if (!dateString) return '—';
+    return new Date(dateString).toLocaleString('pt-BR', {
+      day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit'
+    });
+  };
+
+  const formatDateOnly = (dateString?: string) => {
+    if (!dateString) return '—';
+    return new Date(dateString).toLocaleDateString('pt-BR');
+  };
+
+  const formatGB = (gb?: number) => gb ? `${gb.toFixed(1)} GB` : '—';
+
+  const filteredComputers = computers.filter(c =>
+    c.hostname.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (c.manufacturer && c.manufacturer.toLowerCase().includes(searchTerm.toLowerCase())) ||
+    (c.os && c.os.toLowerCase().includes(searchTerm.toLowerCase())) ||
+    (c.ipAddress && c.ipAddress.includes(searchTerm))
+  );
+
+  // Show login if not authenticated
+  if (!isAuthenticated) {
+    return <LoginModal onLoginSuccess={() => setIsAuthenticated(true)} />;
+  }
+
+  return (
+    <div className="min-h-screen flex flex-col">
+      {/* Header */}
+      <header className="border-b border-zinc-800 bg-zinc-950/95 backdrop-blur sticky top-0 z-50">
+        <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-600">
+              <Monitor className="h-5 w-5" />
+            </div>
+            <div>
+              <h1 className="font-semibold text-2xl tracking-tight">PC Portfolio</h1>
+              <p className="text-xs text-zinc-500 -mt-1">Inventário de Computadores</p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <button 
+              onClick={openAgentModal}
+              className="btn btn-secondary flex items-center gap-2 text-sm"
+            >
+              <Download className="h-4 w-4" />
+              Agente / Script
+            </button>
+            
+            <button 
+              onClick={() => openCompanyModal()}
+              className="btn btn-primary flex items-center gap-2"
+            >
+              <Plus className="h-4 w-4" />
+              Nova Empresa
+            </button>
+          </div>
+        </div>
+      </header>
+
+      <div className="flex flex-1 max-w-7xl mx-auto w-full">
+        {/* Sidebar */}
+        <div className="w-80 border-r border-zinc-800 p-5 flex flex-col">
+          <div className="flex items-center justify-between mb-3 px-1">
+            <div>
+              <h2 className="font-medium text-sm uppercase tracking-widest text-zinc-500">Empresas</h2>
+              <p className="text-xs text-zinc-500">{companies.length} cadastradas</p>
+            </div>
+            <button onClick={fetchCompanies} className="text-zinc-400 hover:text-white p-1.5 rounded-lg hover:bg-zinc-900">
+              <RefreshCw className="h-4 w-4" />
+            </button>
+          </div>
+
+          {isLoading ? (
+            <div className="flex justify-center py-12"><RefreshCw className="animate-spin h-5 w-5 text-zinc-400" /></div>
+          ) : companies.length === 0 ? (
+            <div className="text-center py-8 px-3 text-sm text-zinc-500">Nenhuma empresa cadastrada.</div>
+          ) : (
+            <div className="space-y-1 overflow-auto flex-1 pr-1">
+              {companies.map((company) => (
+                <div
+                  key={company.id}
+                  onClick={() => selectCompany(company)}
+                  className={`group flex items-center justify-between rounded-xl px-3 py-3 cursor-pointer transition-all border ${
+                    selectedCompany?.id === company.id 
+                      ? 'bg-zinc-900 border-zinc-700' 
+                      : 'hover:bg-zinc-900/60 border-transparent hover:border-zinc-800'
+                  }`}
+                >
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="h-9 w-9 rounded-xl bg-zinc-800 flex items-center justify-center flex-shrink-0">
+                      <Building2 className="h-4.5 w-4.5 text-zinc-400" />
+                    </div>
+                    <div className="min-w-0">
+                      <div className="font-medium truncate">{company.name}</div>
+                      <div className="text-xs text-zinc-500">{company._count?.computers || 0} PC(s)</div>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition">
+                    <button onClick={(e) => { e.stopPropagation(); openCompanyModal(company); }} className="p-1.5 hover:bg-zinc-800 rounded-md text-zinc-400 hover:text-zinc-200">
+                      <Edit2 className="h-3.5 w-3.5" />
+                    </button>
+                    <button onClick={(e) => { e.stopPropagation(); deleteCompany(company); }} className="p-1.5 hover:bg-zinc-800 rounded-md text-red-400 hover:text-red-300">
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          <div className="mt-auto pt-4 border-t border-zinc-800 text-xs text-zinc-500 px-1">
+            {selectedCompany && (
+              <div>
+                <div className="font-mono text-[10px] bg-zinc-900 px-2 py-1 rounded mb-1.5 truncate">{selectedCompany.apiKey}</div>
+                <button onClick={() => copyToClipboard(selectedCompany.apiKey, "API Key")} className="flex items-center gap-1.5 text-blue-400 hover:text-blue-300">
+                  <Copy className="h-3 w-3" /> Copiar API Key
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Main */}
+        <div className="flex-1 flex flex-col">
+          {!selectedCompany ? (
+            <div className="flex flex-1 items-center justify-center p-12 text-center">
+              <div>
+                <div className="mx-auto mb-6 h-16 w-16 flex items-center justify-center rounded-2xl bg-zinc-900">
+                  <Monitor className="h-8 w-8 text-zinc-400" />
+                </div>
+                <h3 className="font-semibold text-2xl mb-2">Selecione uma empresa</h3>
+                <p className="text-zinc-400 max-w-xs mx-auto text-sm">Escolha uma empresa na barra lateral.</p>
+                <button onClick={() => openCompanyModal()} className="mt-6 btn btn-primary mx-auto">Cadastrar primeira empresa</button>
+              </div>
+            </div>
+          ) : (
+            <>
+              {/* Header */}
+              <div className="border-b border-zinc-800 px-8 py-5 flex items-center justify-between">
+                <div>
+                  <div className="flex items-center gap-3">
+                    <h2 className="text-3xl font-semibold tracking-tight">{selectedCompany.name}</h2>
+                    <span className="text-xs px-3 py-1 rounded-full bg-zinc-800 text-zinc-400">{computers.length} computadores</span>
+                  </div>
+                  {selectedCompany.contact && <p className="text-sm text-zinc-400 mt-0.5">{selectedCompany.contact}</p>}
+                </div>
+
+                <div className="flex items-center gap-3">
+                  <button onClick={exportToExcel} className="btn btn-secondary flex items-center gap-2 text-sm">
+                    <FileSpreadsheet className="h-4 w-4" /> Exportar Excel
+                  </button>
+                  <button onClick={openAgentModal} className="btn btn-secondary flex items-center gap-2 text-sm">
+                    <Key className="h-4 w-4" /> Agente
+                  </button>
+                  <button onClick={() => openComputerModal()} className="btn btn-primary flex items-center gap-2">
+                    <Plus className="h-4 w-4" /> Adicionar PC
+                  </button>
+                  <button onClick={() => fetchComputers(selectedCompany.id)} className="btn btn-secondary p-2.5">
+                    <RefreshCw className="h-4 w-4" />
+                  </button>
+                </div>
+              </div>
+
+              {/* API Key */}
+              <div className="bg-zinc-900 border-b border-zinc-800 px-8 py-3 flex items-center justify-between text-sm">
+                <div className="flex items-center gap-3">
+                  <div className="font-mono bg-zinc-950 px-3 py-1.5 rounded text-xs border border-zinc-800">{selectedCompany.apiKey}</div>
+                  <button onClick={() => copyToClipboard(selectedCompany.apiKey, "API Key")} className="text-xs flex items-center gap-1.5 text-blue-400 hover:text-blue-300">
+                    <Copy className="h-3.5 w-3.5" /> Copiar
+                  </button>
+                </div>
+                <div className="text-xs text-zinc-500">Use esta chave no agente</div>
+              </div>
+
+              {/* Search */}
+              <div className="px-8 pt-5 pb-3 flex items-center gap-4">
+                <input 
+                  placeholder="Buscar por hostname, fabricante, SO ou IP..." 
+                  value={searchTerm} 
+                  onChange={(e) => setSearchTerm(e.target.value)} 
+                  className="flex-1 max-w-md" 
+                />
+                <div className="text-xs text-zinc-500">{filteredComputers.length} / {computers.length}</div>
+              </div>
+
+              {/* Table */}
+              <div className="px-8 pb-8 flex-1 overflow-auto">
+                {computers.length === 0 ? (
+                  <div className="py-16 text-center border border-dashed border-zinc-800 rounded-2xl">
+                    <Monitor className="mx-auto mb-4 h-10 w-10 text-zinc-600" />
+                    <p className="text-lg text-zinc-400">Nenhum computador cadastrado.</p>
+                    <button onClick={() => openComputerModal()} className="mt-4 btn btn-primary">Adicionar PC</button>
+                  </div>
+                ) : (
+                  <div className="card overflow-hidden">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr>
+                          <th>Hostname</th>
+                          <th>Fabricante / Modelo</th>
+                          <th>CPU</th>
+                          <th>RAM</th>
+                          <th>Disco</th>
+                          <th>SO</th>
+                          <th>Instalação SO</th>
+                          <th>Última Inicialização</th>
+                          <th>IP</th>
+                          <th>Última Atualização</th>
+                          <th className="text-right">Ações</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {filteredComputers.map((comp) => (
+                          <tr key={comp.id} className="computer-row hover:bg-zinc-900/70">
+                            <td className="font-medium">
+                              {comp.hostname}
+                              {comp.serialNumber && <div className="text-[10px] text-zinc-500">SN: {comp.serialNumber}</div>}
+                            </td>
+                            <td>
+                              {comp.manufacturer ? <div>{comp.manufacturer}<br/><span className="text-xs text-zinc-400">{comp.model}</span></div> : '—'}
+                            </td>
+                            <td>
+                              {comp.cpu ? <div>{comp.cpu}{comp.cpuCores && <span className="spec-badge ml-2">{comp.cpuCores} núcleos</span>}</div> : '—'}
+                            </td>
+                            <td>{formatGB(comp.ramGB)}</td>
+                            <td>{formatGB(comp.diskGB)}</td>
+                            <td>
+                              {comp.os ? <div>{comp.os}<br/><span className="text-xs text-zinc-400">{comp.osVersion}</span></div> : '—'}
+                            </td>
+                            <td className="text-xs">{formatDateOnly(comp.osInstallDate)}</td>
+                            <td className="text-xs">{formatDate(comp.lastBootTime)}</td>
+                            <td className="font-mono text-xs text-zinc-400">{comp.ipAddress || '—'}</td>
+                            <td className="text-xs text-zinc-400 whitespace-nowrap">{formatDate(comp.lastSeen)}</td>
+                            <td className="text-right">
+                              <div className="flex gap-1 justify-end">
+                                <button onClick={() => openComputerModal(comp)} className="p-2 text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800 rounded-lg"><Edit2 className="h-4 w-4" /></button>
+                                <button onClick={() => deleteComputer(comp)} className="p-2 text-red-400 hover:text-red-300 hover:bg-zinc-800 rounded-lg"><Trash2 className="h-4 w-4" /></button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+            </>
+          )}
+        </div>
+      </div>
+
+      {/* Modals (Company, Computer, Agent) - same as before but with new fields in computer modal */}
+      {/* Company Modal */}
+      {showCompanyModal && (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-[100] p-6" onClick={() => setShowCompanyModal(false)}>
+          <div className="modal card w-full max-w-md p-6" onClick={e => e.stopPropagation()}>
+            <h3 className="text-xl font-semibold mb-1">{editingCompany ? 'Editar Empresa' : 'Nova Empresa'}</h3>
+            <div className="space-y-4 mt-5">
+              <div>
+                <label className="text-sm font-medium text-zinc-400 block mb-1.5">Nome da empresa</label>
+                <input value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} placeholder="Ex: Empresa ABC Ltda" className="w-full" />
+              </div>
+              <div>
+                <label className="text-sm font-medium text-zinc-400 block mb-1.5">Contato (opcional)</label>
+                <input value={formData.contact} onChange={(e) => setFormData({ ...formData, contact: e.target.value })} placeholder="Nome do responsável" className="w-full" />
+              </div>
+            </div>
+            <div className="flex gap-3 mt-8">
+              <button onClick={() => setShowCompanyModal(false)} className="btn btn-secondary flex-1">Cancelar</button>
+              <button onClick={saveCompany} className="btn btn-primary flex-1">{editingCompany ? 'Salvar' : 'Cadastrar'}</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Computer Modal with new fields */}
+      {showComputerModal && (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-[100] p-6" onClick={() => setShowComputerModal(false)}>
+          <div className="modal card w-full max-w-2xl max-h-[92vh] overflow-auto p-6" onClick={e => e.stopPropagation()}>
+            <div className="flex justify-between items-center mb-5">
+              <h3 className="text-xl font-semibold">{editingComputer ? 'Editar Computador' : 'Adicionar Computador'}</h3>
+              <button onClick={() => setShowComputerModal(false)}><X className="h-5 w-5" /></button>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {[
+                { key: 'hostname', label: 'Hostname *' },
+                { key: 'manufacturer', label: 'Fabricante' },
+                { key: 'model', label: 'Modelo' },
+                { key: 'serialNumber', label: 'Número de Série' },
+                { key: 'cpu', label: 'Processador' },
+                { key: 'cpuCores', label: 'Núcleos CPU', type: 'number' },
+                { key: 'ramGB', label: 'RAM (GB)', type: 'number' },
+                { key: 'diskGB', label: 'Disco (GB)', type: 'number' },
+                { key: 'gpu', label: 'GPU' },
+                { key: 'os', label: 'Sistema Operacional' },
+                { key: 'osVersion', label: 'Versão do SO' },
+                { key: 'osInstallDate', label: 'Data Instalação SO', type: 'date' },
+                { key: 'lastBootTime', label: 'Última Inicialização', type: 'datetime-local' },
+                { key: 'ipAddress', label: 'IP' },
+                { key: 'macAddress', label: 'MAC Address' },
+                { key: 'biosVersion', label: 'Versão BIOS' },
+              ].map((field) => (
+                <div key={field.key}>
+                  <label className="block text-xs text-zinc-400 mb-1">{field.label}</label>
+                  <input 
+                    type={field.type || 'text'} 
+                    value={computerForm[field.key] || ''} 
+                    onChange={(e) => setComputerForm({ ...computerForm, [field.key]: e.target.value })} 
+                    className="w-full" 
+                  />
+                </div>
+              ))}
+
+              <div className="md:col-span-2">
+                <label className="block text-xs text-zinc-400 mb-1">Observações</label>
+                <textarea value={computerForm.notes || ''} onChange={(e) => setComputerForm({ ...computerForm, notes: e.target.value })} className="w-full min-h-[70px]" />
+              </div>
+            </div>
+
+            <div className="flex gap-3 mt-7 pt-4 border-t border-zinc-800">
+              <button onClick={() => setShowComputerModal(false)} className="btn btn-secondary flex-1">Cancelar</button>
+              <button onClick={saveComputer} className="btn btn-primary flex-1">{editingComputer ? 'Salvar' : 'Adicionar'}</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Improved Agent Modal */}
+      {showAgentModal && selectedCompany && (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-[100] p-6" onClick={() => setShowAgentModal(false)}>
+          <div className="modal card w-full max-w-3xl p-7 overflow-auto max-h-[92vh]" onClick={e => e.stopPropagation()}>
+            <h3 className="text-2xl font-semibold mb-1">Agente para Computadores</h3>
+            <p className="text-zinc-400 mb-5">Instale o script em cada PC. Ele reporta automaticamente (incluindo data de instalação do SO e última inicialização).</p>
+
+            <div className="bg-zinc-950 border border-zinc-800 p-4 rounded-xl mb-5">
+              <div className="text-xs text-zinc-400">API Key desta empresa</div>
+              <div className="flex items-center gap-2 mt-1">
+                <div className="api-key flex-1 text-sm font-mono">{selectedCompany.apiKey}</div>
+                <button onClick={() => copyToClipboard(selectedCompany.apiKey, "API Key")} className="btn btn-secondary text-xs px-3 py-1.5">Copiar</button>
+              </div>
+            </div>
+
+            <div className="space-y-6 text-sm">
+              {/* Python */}
+              <div>
+                <div className="font-semibold mb-1 flex items-center gap-2">🐍 Python (recomendado - Windows, Linux, macOS)</div>
+                <div className="bg-black p-4 rounded-xl font-mono text-xs overflow-auto border border-zinc-800">
+                  <pre>{`pip install requests psutil wmi   # Windows: pip install wmi
+
+API_KEY="${selectedCompany.apiKey}"
+# Baixe o script completo em: /scripts/agent.py
+python agent.py --api-key $API_KEY --url https://seu-dominio.vercel.app/api/agent/report`}</pre>
+                </div>
+                <div className="text-[10px] text-zinc-500 mt-1">O script melhorado agora coleta <strong>osInstallDate</strong> e <strong>lastBootTime</strong>.</div>
+              </div>
+
+              {/* PowerShell */}
+              <div>
+                <div className="font-semibold mb-1 flex items-center gap-2">🪟 PowerShell (Windows)</div>
+                <div className="bg-black p-4 rounded-xl font-mono text-xs overflow-auto border border-zinc-800">
+                  <pre>{`$apiKey = "${selectedCompany.apiKey}"
+# Baixe o script completo em: /scripts/agent.ps1
+.\\agent.ps1 -ApiKey $apiKey -Url "https://seu-dominio.vercel.app/api/agent/report"`}</pre>
+                </div>
+              </div>
+
+              <div className="text-xs bg-zinc-900 border border-zinc-800 p-3 rounded">
+                <strong>Dica:</strong> Agende o script para rodar diariamente (Task Scheduler no Windows ou cron no Linux).
+              </div>
+            </div>
+
+            <div className="mt-6 text-right">
+              <button onClick={() => setShowAgentModal(false)} className="btn btn-secondary">Fechar</button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
