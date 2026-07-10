@@ -66,23 +66,10 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'companyId é obrigatório' }, { status: 400 });
     }
 
-    // Fetch all and deduplicate by hostname (keep the most recently seen)
-    const allComputers = await prisma.computer.findMany({
+    const computers = await prisma.computer.findMany({
       where: { companyId },
       orderBy: { lastSeen: 'desc' }
     });
-
-    // Deduplicate: keep only the newest record per hostname (case-insensitive)
-    const uniqueMap = new Map<string, any>();
-    
-    for (const comp of allComputers) {
-      const key = comp.hostname.toLowerCase().trim();
-      if (!uniqueMap.has(key)) {
-        uniqueMap.set(key, comp);
-      }
-    }
-
-    const computers = Array.from(uniqueMap.values());
 
     return NextResponse.json(computers);
   } catch (error) {

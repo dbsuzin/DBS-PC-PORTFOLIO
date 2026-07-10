@@ -265,28 +265,16 @@ export default function PCPortfolio() {
 
   const openAgentModal = () => setShowAgentModal(true);
 
-  const formatDate = (dateString?: string | Date) => {
+  const formatDate = (dateString?: string) => {
     if (!dateString) return '—';
-    try {
-      const d = typeof dateString === 'string' ? new Date(dateString) : dateString;
-      if (isNaN(d.getTime())) return '—';
-      return d.toLocaleString('pt-BR', {
-        day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit'
-      });
-    } catch {
-      return '—';
-    }
+    return new Date(dateString).toLocaleString('pt-BR', {
+      day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit'
+    });
   };
 
-  const formatDateOnly = (dateString?: string | Date) => {
+  const formatDateOnly = (dateString?: string) => {
     if (!dateString) return '—';
-    try {
-      const d = typeof dateString === 'string' ? new Date(dateString) : dateString;
-      if (isNaN(d.getTime())) return '—';
-      return d.toLocaleDateString('pt-BR');
-    } catch {
-      return '—';
-    }
+    return new Date(dateString).toLocaleDateString('pt-BR');
   };
 
   const formatGB = (gb?: number) => gb ? `${gb.toFixed(1)} GB` : '—';
@@ -308,7 +296,7 @@ export default function PCPortfolio() {
       <header className="border-b border-zinc-800 bg-zinc-950/95 backdrop-blur sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <img src="/dbs-logo.png" alt="DBS" className="h-[300px] w-auto" />
+            <img src="/dbs-logo.png" alt="DBS" className="h-9 w-auto" />
             <div>
               <h1 className="font-semibold text-2xl tracking-tight">PC Portfolio</h1>
               <p className="text-xs text-zinc-500 -mt-1">Inventário de Computadores</p>
