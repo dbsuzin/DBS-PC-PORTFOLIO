@@ -309,7 +309,7 @@ export default function PCPortfolio() {
       <header className="border-b border-zinc-800 bg-zinc-950/95 backdrop-blur sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <img src="/dbs-logo.png" alt="DBS" className="h-40 w-auto" />
+            <img src="/dbs-logo.png" alt="DBS" className="h-8 w-auto" />
             <div>
               <h1 className="font-semibold text-2xl tracking-tight">PC Portfolio</h1>
               <p className="text-xs text-zinc-500 -mt-1">Inventário de Computadores</p>
@@ -337,8 +337,8 @@ export default function PCPortfolio() {
       </header>
 
       <div className="flex flex-1 max-w-7xl mx-auto w-full">
-        {/* Sidebar - REDUZIDA (compacta) */}
-        <div className="w-32 border-r border-zinc-800 p-1 flex flex-col">
+        {/* Sidebar - MUITO COMPACTA */}
+        <div className="w-16 border-r border-zinc-800 p-0.5 flex flex-col">
           <div className="flex items-center justify-between mb-2 px-1">
             <div>
               <h2 className="font-medium text-[10px] uppercase tracking-widest text-zinc-500">Empresas</h2>
@@ -499,7 +499,9 @@ export default function PCPortfolio() {
                               {comp.cpu ? (comp.cpuCores ? `${comp.cpu} (${comp.cpuCores})` : comp.cpu) : '—'}
                             </td>
                             <td className="px-2 py-1 whitespace-nowrap">{formatGB(comp.ramGB)}</td>
-                            <td className="px-2 py-1 whitespace-nowrap">{formatGB(comp.diskGB)}</td>
+                            <td className="px-2 py-1 whitespace-nowrap text-[9px]">
+                              {comp.disks ? comp.disks : formatGB(comp.diskGB)}
+                            </td>
                             <td className="px-2 py-1 whitespace-nowrap text-zinc-300">
                               {comp.os ? `${comp.os} ${comp.osVersion || ''}`.trim() : '—'}
                             </td>
