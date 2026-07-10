@@ -145,3 +145,22 @@ input:focus, select:focus, textarea:focus {
 table {
   font-feature-settings: "tnum";
 }
+
+/* Scrollbar customizado para tabelas */
+.card::-webkit-scrollbar {
+  height: 8px;
+  width: 8px;
+}
+
+.card::-webkit-scrollbar-track {
+  background: #18181b;
+}
+
+.card::-webkit-scrollbar-thumb {
+  background: #3f3f46;
+  border-radius: 4px;
+}
+
+.card::-webkit-scrollbar-thumb:hover {
+  background: #52525b;
+}

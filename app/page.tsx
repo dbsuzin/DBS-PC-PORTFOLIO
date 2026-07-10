@@ -469,7 +469,7 @@ export default function PCPortfolio() {
               </div>
 
               {/* Table */}
-              <div className="px-6 pb-8 flex-1 overflow-x-auto">
+              <div className="px-6 pb-8 flex-1">
                 {computers.length === 0 ? (
                   <div className="py-16 text-center border border-dashed border-zinc-800 rounded-2xl">
                     <Monitor className="mx-auto mb-4 h-10 w-10 text-zinc-600" />
@@ -477,8 +477,8 @@ export default function PCPortfolio() {
                     <button onClick={() => openComputerModal()} className="mt-4 btn btn-primary">Adicionar PC</button>
                   </div>
                 ) : (
-                  <div className="card overflow-hidden">
-                    <table className="w-full text-xs">
+                  <div className="card overflow-x-auto">
+                    <table className="w-full text-xs min-w-[1400px]">
                       <thead>
                         <tr className="text-left">
                           <th className="px-3 py-2.5 font-medium text-zinc-400">Hostname</th>
@@ -491,12 +491,12 @@ export default function PCPortfolio() {
                           <th className="px-3 py-2.5 font-medium text-zinc-400">Últ. Boot</th>
                           <th className="px-3 py-2.5 font-medium text-zinc-400">IP</th>
                           <th className="px-3 py-2.5 font-medium text-zinc-400">Atualizado</th>
-                          <th className="px-3 py-2.5 font-medium text-right text-zinc-400">Ações</th>
+                          <th className="px-3 py-2.5 font-medium text-right text-zinc-400 sticky right-0 bg-zinc-900" style={{ minWidth: '100px' }}>Ações</th>
                         </tr>
                       </thead>
                       <tbody>
                         {filteredComputers.map((comp) => (
-                          <tr key={comp.id} className="computer-row hover:bg-zinc-900/70 border-t border-zinc-800">
+                          <tr key={comp.id} className="computer-row hover:bg-zinc-900/70 border-t border-zinc-800 group">
                             <td className="px-3 py-2 font-medium whitespace-nowrap">{comp.hostname}</td>
                             <td className="px-3 py-2 whitespace-nowrap text-zinc-300">
                               {comp.manufacturer ? `${comp.manufacturer} / ${comp.model || ''}` : '—'}
@@ -515,10 +515,22 @@ export default function PCPortfolio() {
                             <td className="px-3 py-2 whitespace-nowrap">{formatDate(comp.lastBootTime)}</td>
                             <td className="px-3 py-2 font-mono text-zinc-400 whitespace-nowrap">{comp.ipAddress || '—'}</td>
                             <td className="px-3 py-2 text-zinc-400 whitespace-nowrap">{formatDate(comp.lastSeen)}</td>
-                            <td className="px-3 py-2 text-right">
+                            <td className="px-3 py-2 text-right sticky right-0 bg-zinc-950 group-hover:bg-zinc-900" style={{ minWidth: '100px' }}>
                               <div className="flex gap-1 justify-end">
-                                <button onClick={() => openComputerModal(comp)} className="p-1.5 text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800 rounded"><Edit2 className="h-3.5 w-3.5" /></button>
-                                <button onClick={() => deleteComputer(comp)} className="p-1.5 text-red-400 hover:text-red-300 hover:bg-zinc-800 rounded"><Trash2 className="h-3.5 w-3.5" /></button>
+                                <button 
+                                  onClick={() => openComputerModal(comp)} 
+                                  className="p-1.5 text-zinc-400 hover:text-white hover:bg-zinc-700 rounded transition"
+                                  title="Editar"
+                                >
+                                  <Edit2 className="h-4 w-4" />
+                                </button>
+                                <button 
+                                  onClick={() => deleteComputer(comp)} 
+                                  className="p-1.5 text-red-400 hover:text-red-300 hover:bg-zinc-700 rounded transition"
+                                  title="Excluir"
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </button>
                               </div>
                             </td>
                           </tr>
