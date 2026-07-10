@@ -672,7 +672,7 @@ export default function PCPortfolio() {
         </div>
       )}
 
-      {/* ========== AGENT MODAL (NOVO - CORRIGIDO) ========== */}
+      {/* ========== AGENT MODAL (NOVO - CORRIGIDO) =========== */}
       {showAgentModal && (
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-[100] p-4" onClick={() => setShowAgentModal(false)}>
           <div className="modal card w-full max-w-2xl p-0 max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
