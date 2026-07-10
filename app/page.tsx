@@ -479,7 +479,7 @@ export default function PCPortfolio() {
                           <th className="px-2 py-1.5 font-medium text-zinc-400">Fabricante/Modelo</th>
                           <th className="px-2 py-1.5 font-medium text-zinc-400">CPU</th>
                           <th className="px-2 py-1.5 font-medium text-zinc-400">RAM</th>
-                          <th className="px-2 py-1.5 font-medium text-zinc-400">Disco</th>
+                          <th className="px-2 py-1.5 font-medium text-zinc-400">Disco (Físico)</th>
                           <th className="px-2 py-1.5 font-medium text-zinc-400">SO / Versão</th>
                           <th className="px-2 py-1.5 font-medium text-zinc-400">Inst. SO</th>
                           <th className="px-2 py-1.5 font-medium text-zinc-400">Últ. Boot</th>
@@ -628,6 +628,12 @@ export default function PCPortfolio() {
 
               <div className="text-xs bg-zinc-900 border border-zinc-800 p-3 rounded">
                 <strong>Dica:</strong> Agende o script para rodar diariamente (Task Scheduler no Windows).
+              </div>
+
+              <div className="text-xs bg-zinc-900 border border-zinc-800 p-3 rounded">
+                <strong>HDs físicos:</strong> O agente agora mostra <strong>apenas discos físicos</strong> (SSD/HD reais).<br />
+                Exclui automaticamente Google Drive, OneDrive, drives virtuais, USB, rede e volumes pequenos.<br />
+                Formato: <span className="font-mono">C: 477GB (45% livre) + D: 931GB (72% livre)</span>
               </div>
             </div>
 

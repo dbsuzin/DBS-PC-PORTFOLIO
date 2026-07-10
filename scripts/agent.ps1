@@ -35,18 +35,73 @@ try {
 } catch {}
 
 try {
-    $disks = Get-CimInstance Win32_LogicalDisk -Filter "DriveType=3"
-    $total = ($disks | Measure-Object -Property Size -Sum).Sum
-    $info.diskGB = [double]([math]::Round($total / 1GB, 1))
-
-    # Detalhes por disco (SSD + HD) - formato claro
+    # === COLETA APENAS DISCOS FÍSICOS REAIS (SSD + HD) ===
+    # Exclui Google Drive, OneDrive, Dropbox, drives virtuais, USB, rede, CD, etc.
     $diskList = @()
-    foreach ($d in $disks) {
-        $sizeGB = [math]::Round($d.Size / 1GB, 0)
-        $freeGB = [math]::Round($d.FreeSpace / 1GB, 0)
-        $diskList += "$($d.DeviceID) ${sizeGB}GB"
+    $totalSize = 0
+    
+    # Obter todos os discos físicos fixos
+    $physDisks = Get-CimInstance Win32_DiskDrive | Where-Object {
+        ($_.MediaType -match '(?i)Fixed|Hard') -and
+        ($_.InterfaceType -notmatch '(?i)USB|1394|Virtual') -and
+        ($_.Size -gt 10GB)   # ignora discos muito pequenos / virtuais
     }
-    $info.disks = ($diskList -join " + ")
+    
+    foreach ($phys in $physDisks) {
+        try {
+            # Associar partições
+            $partQuery = "ASSOCIATORS OF {Win32_DiskDrive.DeviceID='$($phys.DeviceID)'} WHERE AssocClass = Win32_DiskDriveToDiskPartition"
+            $partitions = @(Get-CimInstance -Query $partQuery -ErrorAction SilentlyContinue)
+            
+            foreach ($part in $partitions) {
+                $ldQuery = "ASSOCIATORS OF {Win32_DiskPartition.DeviceID='$($part.DeviceID)'} WHERE AssocClass = Win32_LogicalDiskToPartition"
+                $logicals = @(Get-CimInstance -Query $ldQuery -ErrorAction SilentlyContinue)
+                
+                foreach ($d in $logicals) {
+                    if ($d.DriveType -ne 3 -or $d.Size -lt 1GB) { continue }
+                    
+                    $sizeGB   = [math]::Round($d.Size / 1GB, 0)
+                    $freeGB   = [math]::Round($d.FreeSpace / 1GB, 0)
+                    $freePct  = 0
+                    if ($d.Size -gt 0) {
+                        $freePct = [math]::Round( ($d.FreeSpace / $d.Size) * 100 )
+                    }
+                    
+                    # Filtro extra de nome de volume (Google Drive etc.)
+                    $volName = if ($d.VolumeName) { $d.VolumeName } else { "" }
+                    if ($volName -match '(?i)Google|OneDrive|Dropbox|Box|File Stream|Virtual|RAM Disk') {
+                        continue
+                    }
+                    
+                    $totalSize += $d.Size
+                    
+                    # Formato desejado: "C: 477GB (45% livre)"
+                    $diskList += "$($d.DeviceID) ${sizeGB}GB (${freePct}% livre)"
+                }
+            }
+        } catch {}
+    }
+    
+    # Fallback: se nada foi encontrado com associação física, usa filtro simples (DriveType=3)
+    if ($diskList.Count -eq 0) {
+        $allDisks = Get-CimInstance Win32_LogicalDisk -Filter "DriveType=3"
+        foreach ($d in $allDisks) {
+            if ($d.Size -lt 10GB) { continue }
+            $volName = if ($d.VolumeName) { $d.VolumeName } else { "" }
+            if ($volName -match '(?i)Google|OneDrive|Dropbox|Box|Virtual|RAM') { continue }
+            
+            $sizeGB = [math]::Round($d.Size / 1GB, 0)
+            $freePct = 0
+            if ($d.Size -gt 0) {
+                $freePct = [math]::Round( ($d.FreeSpace / $d.Size) * 100 )
+            }
+            $totalSize += $d.Size
+            $diskList += "$($d.DeviceID) ${sizeGB}GB (${freePct}% livre)"
+        }
+    }
+    
+    $info.diskGB = [double]([math]::Round($totalSize / 1GB, 1))
+    $info.disks = if ($diskList.Count -gt 0) { ($diskList -join " + ") } else { $null }
 } catch {}
 
 # === DATAS (MÉTODO MAIS ROBUSTO COM MÚLTIPLOS FALLBACKS) ===

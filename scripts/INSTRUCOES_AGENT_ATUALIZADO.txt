@@ -1,0 +1,34 @@
+=== INSTRUÇÕES ATUALIZADAS - AGENTE PC PORTFOLIO ===
+
+O agente agora:
+- Mostra APENAS discos físicos reais (SSD + HD)
+- Exclui automaticamente: Google Drive, OneDrive, Dropbox, drives virtuais, USB, rede, CD/DVD, volumes pequenos
+- Mostra o espaço LIVRE em % para cada disco
+
+Formato exibido na tabela:
+C: 477GB (45% livre) + D: 931GB (72% livre)
+
+PASSO A PASSO (PowerShell no Windows):
+
+1. Abra o PowerShell como Administrador (recomendado)
+
+2. Navegue até a pasta onde você salvou o agent.ps1
+
+3. Rode o comando abaixo (substitua SUA_CHAVE pela sua API Key da empresa):
+
+   powershell -ExecutionPolicy Bypass -File ".\agent.ps1" -ApiKey "SUA_CHAVE"
+
+OU (mais simples se você já tem o arquivo):
+
+   .\agent.ps1 -ApiKey SUA_CHAVE
+
+4. Depois de rodar com sucesso, volte no navegador e faça:
+   - Ctrl + Shift + R   (hard refresh para limpar cache)
+   - Ou abra em modo anônimo para testar
+
+5. O disco agora deve mostrar apenas os HDs/SSDs físicos + % livre.
+
+Se quiser agendar automaticamente (Task Scheduler):
+- Crie uma tarefa diária que rode o comando acima.
+
+Dica: Depois de atualizar o script, sempre rode o agente novamente para que os dados novos cheguem ao servidor.
