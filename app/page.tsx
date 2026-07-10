@@ -241,7 +241,7 @@ export default function PCPortfolio() {
 
       await fetchComputers(selectedCompany.id);
       setShowComputerModal(false);
-      toast.success(editingComputer ? 'Computador atualizado!' : 'Computador adicionido!');
+      toast.success(editingComputer ? 'Computador atualizado!' : 'Computador adicionado!');
     } catch (error) {
       toast.error('Erro ao salvar computador');
     }
@@ -307,9 +307,9 @@ export default function PCPortfolio() {
     <div className="min-h-screen flex flex-col">
       {/* Header */}
       <header className="border-b border-zinc-800 bg-zinc-950/95 backdrop-blur sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <img src="/dbs-logo.png" alt="DBS" className="h-36 w-auto" />
+        <div className="w-full px-6 py-4 flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <img src="/dbs-logo.png" alt="DBS" className="h-16 w-auto object-contain" />
             <div>
               <h1 className="font-semibold text-2xl tracking-tight">PC Portfolio</h1>
               <p className="text-xs text-zinc-500 -mt-1">Inventário de Computadores</p>
@@ -336,50 +336,50 @@ export default function PCPortfolio() {
         </div>
       </header>
 
-      <div className="flex flex-1 max-w-7xl mx-auto w-full">
-        {/* Sidebar - LARGURA MELHORADA para ver nomes das empresas */}
-        <div className="w-36 border-r border-zinc-800 p-2 flex flex-col">
-          <div className="flex items-center justify-between mb-2 px-1">
+      <div className="flex flex-1 w-full">
+        {/* Sidebar */}
+        <div className="w-64 flex-shrink-0 border-r border-zinc-800 p-4 flex flex-col">
+          <div className="flex items-center justify-between mb-4 px-1">
             <div>
-              <h2 className="font-medium text-[10px] uppercase tracking-widest text-zinc-500">Empresas</h2>
-              <p className="text-[10px] text-zinc-500">{companies.length} cadastradas</p>
+              <h2 className="font-medium text-xs uppercase tracking-widest text-zinc-500">Empresas</h2>
+              <p className="text-xs text-zinc-400 mt-1">{companies.length} cadastradas</p>
             </div>
-            <button onClick={fetchCompanies} className="text-zinc-400 hover:text-white p-1 rounded-lg hover:bg-zinc-900">
-              <RefreshCw className="h-3.5 w-3.5" />
+            <button onClick={fetchCompanies} className="text-zinc-400 hover:text-white p-1.5 rounded-lg hover:bg-zinc-900">
+              <RefreshCw className="h-4 w-4" />
             </button>
           </div>
 
           {isLoading ? (
             <div className="flex justify-center py-8"><RefreshCw className="animate-spin h-4 w-4 text-zinc-400" /></div>
           ) : companies.length === 0 ? (
-            <div className="text-center py-6 px-2 text-[10px] text-zinc-500">Nenhuma empresa cadastrada.</div>
+            <div className="text-center py-6 px-2 text-xs text-zinc-500">Nenhuma empresa cadastrada.</div>
           ) : (
-            <div className="space-y-0.5 overflow-auto flex-1 pr-1">
+            <div className="space-y-1 overflow-auto flex-1 pr-1">
               {companies.map((company) => (
                 <div
                   key={company.id}
                   onClick={() => selectCompany(company)}
-                  className={`group flex items-center justify-between rounded-lg px-2 py-1.5 cursor-pointer transition-all border text-xs ${
+                  className={`group flex items-center justify-between rounded-lg px-3 py-2.5 cursor-pointer transition-all border ${
                     selectedCompany?.id === company.id 
                       ? 'bg-zinc-900 border-zinc-700' 
                       : 'hover:bg-zinc-900/60 border-transparent hover:border-zinc-800'
                   }`}
                 >
-                  <div className="flex items-center gap-1.5 min-w-0">
-                    <div className="h-5 w-5 rounded bg-zinc-800 flex items-center justify-center flex-shrink-0">
-                      <Building2 className="h-3 w-3 text-zinc-400" />
+                  <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                    <div className="h-8 w-8 rounded-md bg-zinc-800 flex items-center justify-center flex-shrink-0">
+                      <Building2 className="h-4 w-4 text-zinc-400" />
                     </div>
-                    <div className="min-w-0">
-                      <div className="font-medium truncate text-xs leading-none">{company.name}</div>
-                      <div className="text-[9px] text-zinc-500 leading-none mt-0.5">{company._count?.computers || 0} PC(s)</div>
+                    <div className="min-w-0 flex-1">
+                      <div className="font-medium truncate text-sm">{company.name}</div>
+                      <div className="text-xs text-zinc-500 mt-0.5">{company._count?.computers || 0} PC(s)</div>
                     </div>
                   </div>
-                  <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition">
-                    <button onClick={(e) => { e.stopPropagation(); openCompanyModal(company); }} className="p-0.5 hover:bg-zinc-800 rounded text-zinc-400 hover:text-zinc-200">
-                      <Edit2 className="h-2.5 w-2.5" />
+                  <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition flex-shrink-0">
+                    <button onClick={(e) => { e.stopPropagation(); openCompanyModal(company); }} className="p-1 hover:bg-zinc-800 rounded text-zinc-400 hover:text-zinc-200">
+                      <Edit2 className="h-3.5 w-3.5" />
                     </button>
-                    <button onClick={(e) => { e.stopPropagation(); deleteCompany(company); }} className="p-0.5 hover:bg-zinc-800 rounded text-red-400 hover:text-red-300">
-                      <Trash2 className="h-2.5 w-2.5" />
+                    <button onClick={(e) => { e.stopPropagation(); deleteCompany(company); }} className="p-1 hover:bg-zinc-800 rounded text-red-400 hover:text-red-300">
+                      <Trash2 className="h-3.5 w-3.5" />
                     </button>
                   </div>
                 </div>
@@ -387,12 +387,18 @@ export default function PCPortfolio() {
             </div>
           )}
 
-          <div className="mt-auto pt-3 border-t border-zinc-800 text-[10px] text-zinc-500 px-1">
+          <div className="mt-auto pt-4 border-t border-zinc-800 px-1">
             {selectedCompany && (
               <div>
-                <div className="font-mono text-[9px] bg-zinc-900 px-1.5 py-0.5 rounded mb-1 truncate">{selectedCompany.apiKey}</div>
-                <button onClick={() => copyToClipboard(selectedCompany.apiKey, "API Key")} className="flex items-center gap-1 text-blue-400 hover:text-blue-300 text-[10px]">
-                  <Copy className="h-2.5 w-2.5" /> Copiar API Key
+                <div className="text-xs text-zinc-500 mb-2">API Key da empresa</div>
+                <div className="font-mono text-xs bg-zinc-900 px-2 py-1.5 rounded mb-2 truncate border border-zinc-800">
+                  {selectedCompany.apiKey}
+                </div>
+                <button 
+                  onClick={() => copyToClipboard(selectedCompany.apiKey, "API Key")} 
+                  className="flex items-center gap-1.5 text-blue-400 hover:text-blue-300 text-xs"
+                >
+                  <Copy className="h-3 w-3" /> Copiar API Key
                 </button>
               </div>
             )}
@@ -400,7 +406,7 @@ export default function PCPortfolio() {
         </div>
 
         {/* Main */}
-        <div className="flex-1 flex flex-col">
+        <div className="flex-1 flex flex-col min-w-0">
           {!selectedCompany ? (
             <div className="flex flex-1 items-center justify-center p-12 text-center">
               <div>
@@ -415,7 +421,7 @@ export default function PCPortfolio() {
           ) : (
             <>
               {/* Header */}
-              <div className="border-b border-zinc-800 px-4 py-3 flex items-center justify-between">
+              <div className="border-b border-zinc-800 px-6 py-4 flex items-center justify-between">
                 <div>
                   <div className="flex items-center gap-3">
                     <h2 className="text-3xl font-semibold tracking-tight">{selectedCompany.name}</h2>
@@ -441,7 +447,7 @@ export default function PCPortfolio() {
               </div>
 
               {/* API Key */}
-              <div className="bg-zinc-900 border-b border-zinc-800 px-8 py-3 flex items-center justify-between text-sm">
+              <div className="bg-zinc-900 border-b border-zinc-800 px-6 py-3 flex items-center justify-between text-sm">
                 <div className="flex items-center gap-3">
                   <div className="font-mono bg-zinc-950 px-3 py-1.5 rounded text-xs border border-zinc-800">{selectedCompany.apiKey}</div>
                   <button onClick={() => copyToClipboard(selectedCompany.apiKey, "API Key")} className="text-xs flex items-center gap-1.5 text-blue-400 hover:text-blue-300">
@@ -452,7 +458,7 @@ export default function PCPortfolio() {
               </div>
 
               {/* Search */}
-              <div className="px-8 pt-5 pb-3 flex items-center gap-4">
+              <div className="px-6 pt-5 pb-3 flex items-center gap-4">
                 <input 
                   placeholder="Buscar por hostname, fabricante, SO ou IP..." 
                   value={searchTerm} 
@@ -463,7 +469,7 @@ export default function PCPortfolio() {
               </div>
 
               {/* Table */}
-              <div className="px-4 pb-8 flex-1 overflow-x-auto">
+              <div className="px-6 pb-8 flex-1 overflow-x-auto">
                 {computers.length === 0 ? (
                   <div className="py-16 text-center border border-dashed border-zinc-800 rounded-2xl">
                     <Monitor className="mx-auto mb-4 h-10 w-10 text-zinc-600" />
@@ -472,47 +478,47 @@ export default function PCPortfolio() {
                   </div>
                 ) : (
                   <div className="card overflow-hidden">
-                    <table className="w-full text-[10px] min-w-[1180px]">
+                    <table className="w-full text-xs">
                       <thead>
                         <tr className="text-left">
-                          <th className="px-2 py-1.5 font-medium text-zinc-400">Hostname</th>
-                          <th className="px-2 py-1.5 font-medium text-zinc-400">Fabricante/Modelo</th>
-                          <th className="px-2 py-1.5 font-medium text-zinc-400">CPU</th>
-                          <th className="px-2 py-1.5 font-medium text-zinc-400">RAM</th>
-                          <th className="px-2 py-1.5 font-medium text-zinc-400">Disco</th>
-                          <th className="px-2 py-1.5 font-medium text-zinc-400">SO / Versão</th>
-                          <th className="px-2 py-1.5 font-medium text-zinc-400">Inst. SO</th>
-                          <th className="px-2 py-1.5 font-medium text-zinc-400">Últ. Boot</th>
-                          <th className="px-2 py-1.5 font-medium text-zinc-400">IP</th>
-                          <th className="px-2 py-1.5 font-medium text-zinc-400">Atualizado</th>
-                          <th className="px-2 py-1.5 font-medium text-right text-zinc-400">Ações</th>
+                          <th className="px-3 py-2.5 font-medium text-zinc-400">Hostname</th>
+                          <th className="px-3 py-2.5 font-medium text-zinc-400">Fabricante/Modelo</th>
+                          <th className="px-3 py-2.5 font-medium text-zinc-400">CPU</th>
+                          <th className="px-3 py-2.5 font-medium text-zinc-400">RAM</th>
+                          <th className="px-3 py-2.5 font-medium text-zinc-400">Disco</th>
+                          <th className="px-3 py-2.5 font-medium text-zinc-400">SO / Versão</th>
+                          <th className="px-3 py-2.5 font-medium text-zinc-400">Inst. SO</th>
+                          <th className="px-3 py-2.5 font-medium text-zinc-400">Últ. Boot</th>
+                          <th className="px-3 py-2.5 font-medium text-zinc-400">IP</th>
+                          <th className="px-3 py-2.5 font-medium text-zinc-400">Atualizado</th>
+                          <th className="px-3 py-2.5 font-medium text-right text-zinc-400">Ações</th>
                         </tr>
                       </thead>
                       <tbody>
                         {filteredComputers.map((comp) => (
                           <tr key={comp.id} className="computer-row hover:bg-zinc-900/70 border-t border-zinc-800">
-                            <td className="px-2 py-1 font-medium whitespace-nowrap">{comp.hostname}</td>
-                            <td className="px-2 py-1 whitespace-nowrap text-zinc-300">
+                            <td className="px-3 py-2 font-medium whitespace-nowrap">{comp.hostname}</td>
+                            <td className="px-3 py-2 whitespace-nowrap text-zinc-300">
                               {comp.manufacturer ? `${comp.manufacturer} / ${comp.model || ''}` : '—'}
                             </td>
-                            <td className="px-2 py-1 whitespace-nowrap text-zinc-300">
+                            <td className="px-3 py-2 whitespace-nowrap text-zinc-300">
                               {comp.cpu ? (comp.cpuCores ? `${comp.cpu} (${comp.cpuCores})` : comp.cpu) : '—'}
                             </td>
-                            <td className="px-2 py-1 whitespace-nowrap">{formatGB(comp.ramGB)}</td>
-                            <td className="px-2 py-1 whitespace-nowrap text-[9px]">
+                            <td className="px-3 py-2 whitespace-nowrap">{formatGB(comp.ramGB)}</td>
+                            <td className="px-3 py-2 whitespace-nowrap">
                               {comp.disks ? comp.disks : formatGB(comp.diskGB)}
                             </td>
-                            <td className="px-2 py-1 whitespace-nowrap text-zinc-300">
+                            <td className="px-3 py-2 whitespace-nowrap text-zinc-300">
                               {comp.os ? `${comp.os} ${comp.osVersion || ''}`.trim() : '—'}
                             </td>
-                            <td className="px-2 py-1 whitespace-nowrap text-[9px]">{formatDateOnly(comp.osInstallDate)}</td>
-                            <td className="px-2 py-1 whitespace-nowrap text-[9px]">{formatDate(comp.lastBootTime)}</td>
-                            <td className="px-2 py-1 font-mono text-[9px] text-zinc-400 whitespace-nowrap">{comp.ipAddress || '—'}</td>
-                            <td className="px-2 py-1 text-[9px] text-zinc-400 whitespace-nowrap">{formatDate(comp.lastSeen)}</td>
-                            <td className="px-2 py-1 text-right">
-                              <div className="flex gap-0.5 justify-end">
-                                <button onClick={() => openComputerModal(comp)} className="p-1 text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800 rounded"><Edit2 className="h-3 w-3" /></button>
-                                <button onClick={() => deleteComputer(comp)} className="p-1 text-red-400 hover:text-red-300 hover:bg-zinc-800 rounded"><Trash2 className="h-3 w-3" /></button>
+                            <td className="px-3 py-2 whitespace-nowrap">{formatDateOnly(comp.osInstallDate)}</td>
+                            <td className="px-3 py-2 whitespace-nowrap">{formatDate(comp.lastBootTime)}</td>
+                            <td className="px-3 py-2 font-mono text-zinc-400 whitespace-nowrap">{comp.ipAddress || '—'}</td>
+                            <td className="px-3 py-2 text-zinc-400 whitespace-nowrap">{formatDate(comp.lastSeen)}</td>
+                            <td className="px-3 py-2 text-right">
+                              <div className="flex gap-1 justify-end">
+                                <button onClick={() => openComputerModal(comp)} className="p-1.5 text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800 rounded"><Edit2 className="h-3.5 w-3.5" /></button>
+                                <button onClick={() => deleteComputer(comp)} className="p-1.5 text-red-400 hover:text-red-300 hover:bg-zinc-800 rounded"><Trash2 className="h-3.5 w-3.5" /></button>
                               </div>
                             </td>
                           </tr>
@@ -622,7 +628,7 @@ export default function PCPortfolio() {
                 <div className="bg-black p-4 rounded-xl font-mono text-xs overflow-auto border border-zinc-800">
                   <pre>{`$apiKey = "${selectedCompany.apiKey}"
 # Baixe o script em: /scripts/agent.ps1
-.\\\\agent.ps1 -ApiKey $apiKey -Url "https://dbs-pc-portfolio.vercel.app/api/agent/report"`}</pre>
+.\\agent.ps1 -ApiKey $apiKey -Url "https://dbs-pc-portfolio.vercel.app/api/agent/report"`}</pre>
                 </div>
               </div>
 
