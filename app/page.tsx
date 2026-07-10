@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { 
   Plus, Building2, Monitor, Copy, Trash2, Edit2, RefreshCw, 
-  Download, X, FileSpreadsheet 
+  Download, X, FileSpreadsheet, Terminal, Check
 } from 'lucide-react';
 import { toast } from 'sonner';
 import LoginModal from './components/LoginModal';
@@ -47,6 +47,7 @@ export default function PCPortfolio() {
   const [selectedCompany, setSelectedCompany] = useState<Company | null>(null);
   const [computers, setComputers] = useState<Computer[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const [showCompanyModal, setShowCompanyModal] = useState(false);
   const [showComputerModal, setShowComputerModal] = useState(false);
   const [showAgentModal, setShowAgentModal] = useState(false);
@@ -55,6 +56,8 @@ export default function PCPortfolio() {
   const [formData, setFormData] = useState({ name: '', contact: '' });
   const [computerForm, setComputerForm] = useState<any>({});
   const [searchTerm, setSearchTerm] = useState('');
+  const [agentTab, setAgentTab] = useState<'python' | 'powershell'>('python');
+  const [copiedField, setCopiedField] = useState<string | null>(null);
 
   useEffect(() => {
     fetchCompanies();
@@ -86,6 +89,26 @@ export default function PCPortfolio() {
       setComputers(data);
     } catch (error) {
       toast.error('Erro ao carregar computadores');
+    }
+  };
+
+  // ========== FUNÇÃO ATUALIZAR ==========
+  const refreshComputers = async () => {
+    if (!selectedCompany) return;
+    setIsRefreshing(true);
+    try {
+      const res = await fetch(`/api/computers?companyId=${selectedCompany.id}`);
+      const data = await res.json();
+      setComputers(data);
+      
+      // Atualizar contagem na empresa
+      await fetchCompanies();
+      
+      toast.success(`✅ Lista atualizada! ${data.length} computador(es) encontrado(s).`);
+    } catch (error) {
+      toast.error('Erro ao atualizar lista');
+    } finally {
+      setIsRefreshing(false);
     }
   };
 
@@ -259,9 +282,11 @@ export default function PCPortfolio() {
     }
   };
 
-  const copyToClipboard = (text: string, label: string) => {
+  const copyToClipboard = (text: string, field: string) => {
     navigator.clipboard.writeText(text);
-    toast.success(`${label} copiado!`);
+    setCopiedField(field);
+    toast.success('Copiado!');
+    setTimeout(() => setCopiedField(null), 2000);
   };
 
   const openAgentModal = () => setShowAgentModal(true);
@@ -299,6 +324,12 @@ export default function PCPortfolio() {
     (c.ipAddress && c.ipAddress.includes(searchTerm))
   );
 
+  // URLs para o modal do agente
+  const appUrl = typeof window !== 'undefined' ? window.location.origin : 'https://dbs-pc-portfolio.vercel.app';
+  const agentUrl = `${appUrl}/api/agent/report`;
+  const pythonCmd = `python agent.py --api-key ${selectedCompany?.apiKey || 'SUA_API_KEY'} --url ${agentUrl}`;
+  const psCmd = `powershell -ExecutionPolicy Bypass -File ".\\agent.ps1" -ApiKey "${selectedCompany?.apiKey || 'SUA_API_KEY'}" -Url "${agentUrl}"`;
+
   if (!isAuthenticated) {
     return <LoginModal onLoginSuccess={() => setIsAuthenticated(true)} />;
   }
@@ -321,7 +352,7 @@ export default function PCPortfolio() {
               onClick={openAgentModal}
               className="btn btn-secondary flex items-center gap-2 text-sm"
             >
-              <Download className="h-4 w-4" />
+              <Terminal className="h-4 w-4" />
               Agente / Script
             </button>
             
@@ -395,10 +426,11 @@ export default function PCPortfolio() {
                   {selectedCompany.apiKey}
                 </div>
                 <button 
-                  onClick={() => copyToClipboard(selectedCompany.apiKey, "API Key")} 
+                  onClick={() => copyToClipboard(selectedCompany.apiKey, "apikey")} 
                   className="flex items-center gap-1.5 text-blue-400 hover:text-blue-300 text-xs"
                 >
-                  <Copy className="h-3 w-3" /> Copiar API Key
+                  {copiedField === 'apikey' ? <Check className="h-3 w-3 text-green-400" /> : <Copy className="h-3 w-3" />}
+                  {copiedField === 'apikey' ? 'Copiado!' : 'Copiar API Key'}
                 </button>
               </div>
             )}
@@ -431,14 +463,22 @@ export default function PCPortfolio() {
                 </div>
 
                 <div className="flex items-center gap-3">
+                  {/* ========== BOTÃO ATUALIZAR ========== */}
+                  <button 
+                    onClick={refreshComputers} 
+                    disabled={isRefreshing}
+                    className="btn btn-success flex items-center gap-2 text-sm disabled:opacity-60"
+                    title="Atualizar lista de computadores"
+                  >
+                    <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+                    {isRefreshing ? 'Atualizando...' : 'Atualizar'}
+                  </button>
+
                   <button onClick={exportToExcel} className="btn btn-secondary flex items-center gap-2 text-sm">
                     <FileSpreadsheet className="h-4 w-4" /> Exportar Excel
                   </button>
                   <button onClick={() => openComputerModal()} className="btn btn-primary flex items-center gap-2">
                     <Plus className="h-4 w-4" /> Adicionar PC
-                  </button>
-                  <button onClick={() => fetchComputers(selectedCompany.id)} className="btn btn-secondary p-2.5">
-                    <RefreshCw className="h-4 w-4" />
                   </button>
                 </div>
               </div>
@@ -447,8 +487,12 @@ export default function PCPortfolio() {
               <div className="bg-zinc-900 border-b border-zinc-800 px-6 py-3 flex items-center justify-between text-sm">
                 <div className="flex items-center gap-3">
                   <div className="font-mono bg-zinc-950 px-3 py-1.5 rounded text-xs border border-zinc-800">{selectedCompany.apiKey}</div>
-                  <button onClick={() => copyToClipboard(selectedCompany.apiKey, "API Key")} className="text-xs flex items-center gap-1.5 text-blue-400 hover:text-blue-300">
-                    <Copy className="h-3.5 w-3.5" /> Copiar
+                  <button 
+                    onClick={() => copyToClipboard(selectedCompany.apiKey, "apikey-bar")} 
+                    className="text-xs flex items-center gap-1.5 text-blue-400 hover:text-blue-300"
+                  >
+                    {copiedField === 'apikey-bar' ? <Check className="h-3.5 w-3.5 text-green-400" /> : <Copy className="h-3.5 w-3.5" />}
+                    {copiedField === 'apikey-bar' ? 'Copiado!' : 'Copiar'}
                   </button>
                 </div>
                 <div className="text-xs text-zinc-500">Use esta chave no agente</div>
@@ -471,7 +515,15 @@ export default function PCPortfolio() {
                   <div className="py-16 text-center border border-dashed border-zinc-800 rounded-2xl">
                     <Monitor className="mx-auto mb-4 h-10 w-10 text-zinc-600" />
                     <p className="text-lg text-zinc-400">Nenhum computador cadastrado.</p>
-                    <button onClick={() => openComputerModal()} className="mt-4 btn btn-primary">Adicionar PC</button>
+                    <p className="text-sm text-zinc-500 mt-2 mb-4">Use o Agente para cadastrar automaticamente ou adicione manualmente.</p>
+                    <div className="flex gap-3 justify-center">
+                      <button onClick={openAgentModal} className="btn btn-secondary">
+                        <Terminal className="h-4 w-4" /> Instalar Agente
+                      </button>
+                      <button onClick={() => openComputerModal()} className="btn btn-primary">
+                        <Plus className="h-4 w-4" /> Adicionar PC
+                      </button>
+                    </div>
                   </div>
                 ) : (
                   <div className="card overflow-x-auto">
@@ -542,7 +594,9 @@ export default function PCPortfolio() {
         </div>
       </div>
 
-      {/* Modals */}
+      {/* ========== MODALS ========== */}
+
+      {/* Company Modal */}
       {showCompanyModal && (
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-[100] p-6" onClick={() => setShowCompanyModal(false)}>
           <div className="modal card w-full max-w-md p-6" onClick={e => e.stopPropagation()}>
@@ -565,6 +619,7 @@ export default function PCPortfolio() {
         </div>
       )}
 
+      {/* Computer Modal */}
       {showComputerModal && (
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-[100] p-6" onClick={() => setShowComputerModal(false)}>
           <div className="modal card w-full max-w-2xl max-h-[92vh] overflow-auto p-6" onClick={e => e.stopPropagation()}>
@@ -617,91 +672,188 @@ export default function PCPortfolio() {
         </div>
       )}
 
+      {/* ========== AGENT MODAL (NOVO - CORRIGIDO) ========== */}
       {showAgentModal && (
-        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-[100] p-6" onClick={() => setShowAgentModal(false)}>
-          <div className="modal card w-full max-w-3xl p-7 overflow-auto max-h-[92vh]" onClick={e => e.stopPropagation()}>
-            <div className="flex justify-between items-start mb-1">
-              <div>
-                <h3 className="text-2xl font-semibold mb-1">Agente para Computadores</h3>
-                <p className="text-zinc-400 mb-5">Instale o script em cada PC. Ele reporta automaticamente as configurações.</p>
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-[100] p-4" onClick={() => setShowAgentModal(false)}>
+          <div className="modal card w-full max-w-2xl p-0 max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+            {/* Header */}
+            <div className="flex items-center justify-between p-5 border-b border-zinc-800">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-green-500/10 rounded-lg flex items-center justify-center">
+                  <Terminal className="h-5 w-5 text-green-500" />
+                </div>
+                <div>
+                  <h2 className="text-lg font-semibold">Instalar Agente</h2>
+                  <p className="text-xs text-zinc-500">{selectedCompany?.name || 'Selecione uma empresa'}</p>
+                </div>
               </div>
-              <button onClick={() => setShowAgentModal(false)}><X className="h-5 w-5" /></button>
+              <button onClick={() => setShowAgentModal(false)} className="text-zinc-400 hover:text-white p-1">
+                <X className="h-5 w-5" />
+              </button>
             </div>
 
-            {selectedCompany ? (
-              <div className="bg-zinc-950 border border-zinc-800 p-4 rounded-xl mb-5">
-                <div className="text-xs text-zinc-400 mb-2">API Key da empresa <span className="text-zinc-200 font-semibold">{selectedCompany.name}</span></div>
-                <div className="flex items-center gap-2">
-                  <div className="api-key flex-1 text-sm font-mono">{selectedCompany.apiKey}</div>
-                  <button onClick={() => copyToClipboard(selectedCompany.apiKey, "API Key")} className="btn btn-secondary text-xs px-3 py-1.5">Copiar</button>
-                </div>
-              </div>
-            ) : (
-              <div className="bg-yellow-950/40 border border-yellow-800/60 text-yellow-200 p-3 rounded-xl mb-5 text-sm">
-                ⚠️ Selecione uma empresa na barra lateral para ver a API Key correspondente.
-              </div>
-            )}
-
-            <div className="space-y-6 text-sm">
-              {/* Passo 1 */}
-              <div>
-                <div className="font-semibold mb-2 text-zinc-200 flex items-center gap-2">
-                  <span className="inline-flex items-center justify-center h-6 w-6 rounded-full bg-blue-600 text-white text-xs font-bold">1</span>
-                  Baixe o script agent.ps1
-                </div>
-                <p className="text-xs text-zinc-400 mb-2 ml-8">Salve o arquivo em uma pasta acessível no computador (ex: <code className="bg-zinc-900 px-1.5 py-0.5 rounded">C:\PCPortfolio\</code>).</p>
-                <div className="ml-8">
-                  <a 
-                    href="/scripts/agent.ps1" 
-                    download
-                    className="btn btn-secondary text-xs inline-flex items-center gap-2"
-                  >
-                    <Download className="h-3.5 w-3.5" /> Baixar agent.ps1
-                  </a>
-                </div>
-              </div>
-
-              {/* Passo 2 */}
-              <div>
-                <div className="font-semibold mb-2 text-zinc-200 flex items-center gap-2">
-                  <span className="inline-flex items-center justify-center h-6 w-6 rounded-full bg-blue-600 text-white text-xs font-bold">2</span>
-                  Execute no PowerShell (como Administrador)
-                </div>
-                <p className="text-xs text-zinc-400 mb-2 ml-8">Abra o PowerShell na pasta onde salvou o script e execute:</p>
-                <div className="ml-8">
-                  <div className="bg-black p-4 rounded-xl font-mono text-xs overflow-auto border border-zinc-800 relative group">
+            <div className="p-5 space-y-5">
+              {/* API Key */}
+              {selectedCompany ? (
+                <div>
+                  <label className="text-xs text-zinc-400 mb-2 block font-medium">🔑 API Key desta empresa</label>
+                  <div className="flex items-center gap-2">
+                    <code className="api-key flex-1 select-all bg-zinc-900 px-3 py-2 rounded-lg font-mono text-sm border border-zinc-800">{selectedCompany.apiKey}</code>
                     <button
-                      onClick={() => copyToClipboard(
-                        `powershell -ExecutionPolicy Bypass -File ".\\agent.ps1" -ApiKey "${selectedCompany?.apiKey || 'SUA_API_KEY'}"`,
-                        "Comando"
-                      )}
-                      className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs px-2 py-1 rounded"
+                      onClick={() => copyToClipboard(selectedCompany.apiKey, 'modal-apikey')}
+                      className="btn btn-secondary py-2 px-3"
                     >
-                      <Copy className="h-3 w-3 inline mr-1" /> Copiar
+                      {copiedField === 'modal-apikey' ? <Check className="h-4 w-4 text-green-400" /> : <Copy className="h-4 w-4" />}
                     </button>
-                    <pre className="whitespace-pre-wrap break-all pr-16">{`powershell -ExecutionPolicy Bypass -File ".\\agent.ps1" -ApiKey "${selectedCompany?.apiKey || 'SUA_API_KEY'}"`}</pre>
                   </div>
                 </div>
-              </div>
-
-              {/* Passo 3 (opcional) */}
-              <div>
-                <div className="font-semibold mb-2 text-zinc-200 flex items-center gap-2">
-                  <span className="inline-flex items-center justify-center h-6 w-6 rounded-full bg-blue-600 text-white text-xs font-bold">3</span>
-                  Agende para execução automática (opcional)
+              ) : (
+                <div className="bg-yellow-950/40 border border-yellow-800/60 text-yellow-200 p-3 rounded-xl text-sm">
+                  ⚠️ Selecione uma empresa na barra lateral para ver a API Key.
                 </div>
-                <p className="text-xs text-zinc-400 ml-8">
-                  Use o <strong>Task Scheduler</strong> do Windows para agendar o script para rodar diariamente e manter o inventário sempre atualizado.
-                </p>
+              )}
+
+              {/* Tabs */}
+              <div>
+                <div className="flex border-b border-zinc-800 mb-4">
+                  <button
+                    onClick={() => setAgentTab('python')}
+                    className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+                      agentTab === 'python'
+                        ? 'border-blue-500 text-blue-400'
+                        : 'border-transparent text-zinc-500 hover:text-zinc-300'
+                    }`}
+                  >
+                    🐍 Python (recomendado)
+                  </button>
+                  <button
+                    onClick={() => setAgentTab('powershell')}
+                    className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+                      agentTab === 'powershell'
+                        ? 'border-blue-500 text-blue-400'
+                        : 'border-transparent text-zinc-500 hover:text-zinc-300'
+                    }`}
+                  >
+                    ⚡ PowerShell (Windows)
+                  </button>
+                </div>
+
+                {agentTab === 'python' ? (
+                  <div className="space-y-4">
+                    <div>
+                      <p className="text-sm text-zinc-300 mb-2 font-medium">Passo 1 — Baixe o arquivo <code className="text-blue-400">agent.py</code></p>
+                      <p className="text-xs text-zinc-500 mb-2">
+                        Salve o arquivo no PC do cliente.
+                      </p>
+                      <a
+                        href="https://raw.githubusercontent.com/dbsuzin/DBS-PC-PORTFOLIO/main/scripts/agent.py"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="btn btn-secondary text-xs"
+                      >
+                        <Download className="h-3.5 w-3.5" />
+                        Baixar agent.py
+                      </a>
+                    </div>
+
+                    <div>
+                      <p className="text-sm text-zinc-300 mb-2 font-medium">Passo 2 — Instale as dependências</p>
+                      <div className="relative">
+                        <pre className="bg-zinc-900 border border-zinc-800 rounded-lg p-3 font-mono text-xs text-zinc-300 overflow-x-auto">pip install requests psutil{'\n'}# No Windows, instale também:{'\n'}pip install wmi</pre>
+                        <button
+                          onClick={() => copyToClipboard('pip install requests psutil wmi', 'pip')}
+                          className="absolute top-2 right-2 text-zinc-500 hover:text-white"
+                        >
+                          {copiedField === 'pip' ? <Check className="h-3.5 w-3.5 text-green-400" /> : <Copy className="h-3.5 w-3.5" />}
+                        </button>
+                      </div>
+                    </div>
+
+                    <div>
+                      <p className="text-sm text-zinc-300 mb-2 font-medium">Passo 3 — Execute o agente</p>
+                      <div className="relative">
+                        <pre className="bg-zinc-900 border border-zinc-800 rounded-lg p-3 font-mono text-xs text-zinc-300 overflow-x-auto whitespace-pre-wrap break-all">{pythonCmd}</pre>
+                        <button
+                          onClick={() => copyToClipboard(pythonCmd, 'pycmd')}
+                          className="absolute top-2 right-2 text-zinc-500 hover:text-white"
+                        >
+                          {copiedField === 'pycmd' ? <Check className="h-3.5 w-3.5 text-green-400" /> : <Copy className="h-3.5 w-3.5" />}
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="bg-yellow-500/5 border border-yellow-500/20 rounded-lg p-3">
+                      <p className="text-xs text-yellow-300 font-medium mb-1">💡 Dica: Agende para rodar automaticamente</p>
+                      <p className="text-xs text-zinc-400">
+                        Use o <strong>Agendador de Tarefas</strong> (Windows) ou <strong>cron</strong> (Linux/Mac)
+                        para executar o agente diariamente.
+                      </p>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    <div>
+                      <p className="text-sm text-zinc-300 mb-2 font-medium">Passo 1 — Baixe o arquivo <code className="text-blue-400">agent.ps1</code></p>
+                      <p className="text-xs text-zinc-500 mb-2">
+                        Salve o arquivo no PC do cliente.
+                      </p>
+                      <a
+                        href="https://raw.githubusercontent.com/dbsuzin/DBS-PC-PORTFOLIO/main/scripts/agent.ps1"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="btn btn-secondary text-xs"
+                      >
+                        <Download className="h-3.5 w-3.5" />
+                        Baixar agent.ps1
+                      </a>
+                    </div>
+
+                    <div>
+                      <p className="text-sm text-zinc-300 mb-2 font-medium">Passo 2 — Execute no PowerShell (como Admin)</p>
+                      <div className="relative">
+                        <pre className="bg-zinc-900 border border-zinc-800 rounded-lg p-3 font-mono text-xs text-zinc-300 overflow-x-auto whitespace-pre-wrap break-all">{psCmd}</pre>
+                        <button
+                          onClick={() => copyToClipboard(psCmd, 'pscmd')}
+                          className="absolute top-2 right-2 text-zinc-500 hover:text-white"
+                        >
+                          {copiedField === 'pscmd' ? <Check className="h-3.5 w-3.5 text-green-400" /> : <Copy className="h-3.5 w-3.5" />}
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="bg-blue-500/5 border border-blue-500/20 rounded-lg p-3">
+                      <p className="text-xs text-blue-300 font-medium mb-1">⚠️ Erro &quot;não está assinado digitalmente&quot;?</p>
+                      <p className="text-xs text-zinc-400">
+                        O parâmetro <code className="text-blue-400">-ExecutionPolicy Bypass</code> já está incluído no comando acima
+                        e resolve esse problema. Execute o PowerShell como <strong>Administrador</strong>.
+                      </p>
+                    </div>
+
+                    <div className="bg-yellow-500/5 border border-yellow-500/20 rounded-lg p-3">
+                      <p className="text-xs text-yellow-300 font-medium mb-1">💡 Agendar execução automática</p>
+                      <p className="text-xs text-zinc-400">
+                        Abra o <strong>Agendador de Tarefas</strong> → Criar Tarefa Básica → Ação: &quot;Iniciar um programa&quot; →
+                        Programa: <code>powershell</code> → Argumentos com o comando acima.
+                      </p>
+                    </div>
+                  </div>
+                )}
               </div>
 
-              <div className="text-xs bg-zinc-900 border border-zinc-800 p-3 rounded-lg text-zinc-300">
-                <strong className="text-zinc-100">💡 Dica:</strong> Cada empresa possui uma API Key única. Certifique-se de usar a chave correta para cada computador.
+              {/* Instrução pós-execução */}
+              <div className="bg-green-500/5 border border-green-500/20 rounded-lg p-4">
+                <p className="text-sm text-green-300 font-medium mb-1">✅ Depois de rodar o agente</p>
+                <p className="text-xs text-zinc-400">
+                  Clique no botão <strong className="text-green-400">🔄 Atualizar</strong> na lista de computadores
+                  para ver o PC recém-cadastrado. Os dados aparecem instantaneamente!
+                </p>
               </div>
             </div>
 
-            <div className="mt-6 text-right">
-              <button onClick={() => setShowAgentModal(false)} className="btn btn-secondary">Fechar</button>
+            <div className="p-5 border-t border-zinc-800">
+              <button onClick={() => setShowAgentModal(false)} className="btn btn-secondary w-full justify-center">
+                Fechar
+              </button>
             </div>
           </div>
         </div>
