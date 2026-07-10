@@ -305,14 +305,13 @@ export default function PCPortfolio() {
 
   return (
     <div className="min-h-screen flex flex-col w-full">
-      {/* Header - full width */}
+      {/* Header - ONLY as tall as the logo */}
       <header className="border-b border-zinc-800 bg-zinc-950/95 backdrop-blur sticky top-0 z-50 w-full">
-        <div className="w-full px-4 py-3 flex items-center justify-between">
+        <div className="w-full px-4 py-0.5 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <img src="/dbs-logo.png" alt="DBS" className="h-32 w-auto" />
+            <img src="/dbs-logo.png" alt="DBS" className="h-12 w-auto" />
             <div>
-              <h1 className="font-semibold text-2xl tracking-tight">PC Portfolio</h1>
-              <p className="text-xs text-zinc-500 -mt-1">Inventário de Computadores</p>
+              <h1 className="font-semibold text-base tracking-tight">PC Portfolio</h1>
             </div>
           </div>
 
@@ -337,49 +336,49 @@ export default function PCPortfolio() {
       </header>
 
       <div className="flex flex-1 w-full min-w-0">
-        {/* Sidebar - AGGRESSIVELY NARROW (table gets the VAST MAJORITY of the screen) */}
-        <div className="w-12 border-r border-zinc-800 p-0.5 flex flex-col">
-          <div className="flex items-center justify-between mb-1 px-0.5">
+        {/* Sidebar - wider for readable company names */}
+        <div className="w-52 border-r border-zinc-800 p-2 flex flex-col">
+          <div className="flex items-center justify-between mb-2">
             <div>
-              <h2 className="font-medium text-[8px] uppercase tracking-widest text-zinc-500">Empresas</h2>
-              <p className="text-[8px] text-zinc-500">{companies.length}</p>
+              <h2 className="font-medium text-sm uppercase tracking-widest text-zinc-500">Empresas</h2>
+              <p className="text-xs text-zinc-500">{companies.length} cadastradas</p>
             </div>
-            <button onClick={fetchCompanies} className="text-zinc-400 hover:text-white p-0.5 rounded hover:bg-zinc-900">
-              <RefreshCw className="h-3 w-3" />
+            <button onClick={fetchCompanies} className="text-zinc-400 hover:text-white p-1 rounded hover:bg-zinc-900">
+              <RefreshCw className="h-4 w-4" />
             </button>
           </div>
 
           {isLoading ? (
-            <div className="flex justify-center py-4"><RefreshCw className="animate-spin h-3 w-3 text-zinc-400" /></div>
+            <div className="flex justify-center py-6"><RefreshCw className="animate-spin h-4 w-4 text-zinc-400" /></div>
           ) : companies.length === 0 ? (
-            <div className="text-center py-4 px-1 text-[8px] text-zinc-500">—</div>
+            <div className="text-center py-6 px-2 text-sm text-zinc-500">Nenhuma empresa cadastrada.</div>
           ) : (
-            <div className="space-y-px overflow-auto flex-1 pr-0.5">
+            <div className="space-y-1 overflow-auto flex-1 pr-1">
               {companies.map((company) => (
                 <div
                   key={company.id}
                   onClick={() => selectCompany(company)}
-                  className={`group flex items-center justify-between rounded px-1 py-1 cursor-pointer transition-all border text-[9px] ${
+                  className={`group flex items-center justify-between rounded-lg px-2 py-2 cursor-pointer transition-all border text-sm ${
                     selectedCompany?.id === company.id 
                       ? 'bg-zinc-900 border-zinc-700' 
                       : 'hover:bg-zinc-900/60 border-transparent hover:border-zinc-800'
                   }`}
                 >
-                  <div className="flex items-center gap-1 min-w-0">
-                    <div className="h-4 w-4 rounded bg-zinc-800 flex items-center justify-center flex-shrink-0">
-                      <Building2 className="h-2.5 w-2.5 text-zinc-400" />
+                  <div className="flex items-center gap-2 min-w-0">
+                    <div className="h-6 w-6 rounded bg-zinc-800 flex items-center justify-center flex-shrink-0">
+                      <Building2 className="h-3.5 w-3.5 text-zinc-400" />
                     </div>
                     <div className="min-w-0">
-                      <div className="font-medium truncate leading-none">{company.name}</div>
-                      <div className="text-[7px] text-zinc-500 leading-none">{company._count?.computers || 0} PC</div>
+                      <div className="font-medium truncate">{company.name}</div>
+                      <div className="text-xs text-zinc-500">{company._count?.computers || 0} PC(s)</div>
                     </div>
                   </div>
-                  <div className="flex items-center gap-px opacity-0 group-hover:opacity-100 transition">
-                    <button onClick={(e) => { e.stopPropagation(); openCompanyModal(company); }} className="p-px hover:bg-zinc-800 rounded text-zinc-400 hover:text-zinc-200">
-                      <Edit2 className="h-2 w-2" />
+                  <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition">
+                    <button onClick={(e) => { e.stopPropagation(); openCompanyModal(company); }} className="p-0.5 hover:bg-zinc-800 rounded text-zinc-400 hover:text-zinc-200">
+                      <Edit2 className="h-3 w-3" />
                     </button>
-                    <button onClick={(e) => { e.stopPropagation(); deleteCompany(company); }} className="p-px hover:bg-zinc-800 rounded text-red-400 hover:text-red-300">
-                      <Trash2 className="h-2 w-2" />
+                    <button onClick={(e) => { e.stopPropagation(); deleteCompany(company); }} className="p-0.5 hover:bg-zinc-800 rounded text-red-400 hover:text-red-300">
+                      <Trash2 className="h-3 w-3" />
                     </button>
                   </div>
                 </div>
@@ -438,7 +437,7 @@ export default function PCPortfolio() {
               </div>
 
               {/* API Key */}
-              <div className="bg-zinc-900 border-b border-zinc-800 px-8 py-3 flex items-center justify-between text-sm">
+              <div className="bg-zinc-900 border-b border-zinc-800 px-8 py-1.5 flex items-center justify-between text-sm">
                 <div className="flex items-center gap-3">
                   <div className="font-mono bg-zinc-950 px-3 py-1.5 rounded text-xs border border-zinc-800">{selectedCompany.apiKey}</div>
                   <button onClick={() => copyToClipboard(selectedCompany.apiKey, "API Key")} className="text-xs flex items-center gap-1.5 text-blue-400 hover:text-blue-300">
