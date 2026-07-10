@@ -24,27 +24,77 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'hostname é obrigatório' }, { status: 400 });
     }
 
-    const computer = await prisma.computer.create({
-      data: {
+    // Safe number parsing
+    const safeNumber = (val: any) => {
+      if (val === null || val === undefined || val === '') return null;
+      const n = Number(val);
+      return isNaN(n) ? null : n;
+    };
+
+    // Safe date parsing
+    const safeDate = (val: any) => {
+      if (!val || val === '') return null;
+      const d = new Date(val);
+      return isNaN(d.getTime()) ? null : d;
+    };
+
+    // Upsert: update existing by hostname for same company, else create
+    const existing = await prisma.computer.findFirst({
+      where: {
         companyId: company.id,
         hostname: computerData.hostname,
-        manufacturer: computerData.manufacturer || null,
-        model: computerData.model || null,
-        serialNumber: computerData.serialNumber || null,
-        cpu: computerData.cpu || null,
-        cpuCores: computerData.cpuCores || null,
-        ramGB: computerData.ramGB || null,
-        diskGB: computerData.diskGB || null,
-        gpu: computerData.gpu || null,
-        os: computerData.os || null,
-        osVersion: computerData.osVersion || null,
-        ipAddress: computerData.ipAddress || null,
-        macAddress: computerData.macAddress || null,
-        biosVersion: computerData.biosVersion || null,
-        notes: computerData.notes || null,
-        lastSeen: new Date(),
       }
     });
+
+    let computer;
+    if (existing) {
+      computer = await prisma.computer.update({
+        where: { id: existing.id },
+        data: {
+          manufacturer: computerData.manufacturer || null,
+          model: computerData.model || null,
+          serialNumber: computerData.serialNumber || null,
+          cpu: computerData.cpu || null,
+          cpuCores: safeNumber(computerData.cpuCores),
+          ramGB: safeNumber(computerData.ramGB),
+          diskGB: safeNumber(computerData.diskGB),
+          gpu: computerData.gpu || null,
+          os: computerData.os || null,
+          osVersion: computerData.osVersion || null,
+          osInstallDate: safeDate(computerData.osInstallDate),
+          lastBootTime: safeDate(computerData.lastBootTime),
+          ipAddress: computerData.ipAddress || null,
+          macAddress: computerData.macAddress || null,
+          biosVersion: computerData.biosVersion || null,
+          notes: computerData.notes || null,
+          lastSeen: new Date(),
+        }
+      });
+    } else {
+      computer = await prisma.computer.create({
+        data: {
+          companyId: company.id,
+          hostname: computerData.hostname,
+          manufacturer: computerData.manufacturer || null,
+          model: computerData.model || null,
+          serialNumber: computerData.serialNumber || null,
+          cpu: computerData.cpu || null,
+          cpuCores: safeNumber(computerData.cpuCores),
+          ramGB: safeNumber(computerData.ramGB),
+          diskGB: safeNumber(computerData.diskGB),
+          gpu: computerData.gpu || null,
+          os: computerData.os || null,
+          osVersion: computerData.osVersion || null,
+          osInstallDate: safeDate(computerData.osInstallDate),
+          lastBootTime: safeDate(computerData.lastBootTime),
+          ipAddress: computerData.ipAddress || null,
+          macAddress: computerData.macAddress || null,
+          biosVersion: computerData.biosVersion || null,
+          notes: computerData.notes || null,
+          lastSeen: new Date(),
+        }
+      });
+    }
 
     return NextResponse.json({ 
       success: true, 
@@ -52,8 +102,13 @@ export async function POST(request: NextRequest) {
       computerId: computer.id,
       company: company.name 
     }, { status: 201 });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Agent report error:', error);
-    return NextResponse.json({ error: 'Falha ao registrar computador' }, { status: 500 });
+    // Return more details for debugging (remove in production if wanted)
+    return NextResponse.json({ 
+      error: 'Falha ao registrar computador', 
+      details: error.message || String(error),
+      code: error.code || 'UNKNOWN'
+    }, { status: 500 });
   }
 }

@@ -55,27 +55,21 @@ export default function PCPortfolio() {
   const [computerForm, setComputerForm] = useState<any>({});
   const [searchTerm, setSearchTerm] = useState('');
 
-  // On first load, try to fetch data.
-  // If the API returns 401, we show the login modal.
-  // This fixes the "logs in but immediately logs out" bug.
   useEffect(() => {
     fetchCompanies();
   }, []);
 
-  // Fetch all companies
   const fetchCompanies = async () => {
     try {
       const res = await fetch('/api/companies');
-      
       if (res.status === 401) {
         setIsAuthenticated(false);
         setIsLoading(false);
         return;
       }
-      
       const data = await res.json();
       setCompanies(data);
-      setIsAuthenticated(true);   // ← This was missing! Now login will stick
+      setIsAuthenticated(true);
     } catch (error) {
       toast.error('Erro ao carregar empresas');
       setIsAuthenticated(false);
@@ -84,7 +78,6 @@ export default function PCPortfolio() {
     }
   };
 
-  // Fetch computers for selected company
   const fetchComputers = async (companyId: string) => {
     try {
       const res = await fetch(`/api/computers?companyId=${companyId}`);
@@ -95,23 +88,17 @@ export default function PCPortfolio() {
     }
   };
 
-  // Removed the useEffect that was re-calling fetchCompanies when isAuthenticated changed.
-  // It was causing the "login then immediately logout" loop.
-
-  // Select company
   const selectCompany = (company: Company) => {
     setSelectedCompany(company);
     setSearchTerm('');
     fetchComputers(company.id);
   };
 
-  // Export to Excel
   const exportToExcel = async () => {
     if (!selectedCompany) return;
 
     try {
       const res = await fetch(`/api/export?companyId=${selectedCompany.id}`);
-      
       if (!res.ok) throw new Error('Falha na exportação');
 
       const blob = await res.blob();
@@ -130,7 +117,6 @@ export default function PCPortfolio() {
     }
   };
 
-  // Open company modal
   const openCompanyModal = (company?: Company) => {
     if (company) {
       setEditingCompany(company);
@@ -142,7 +128,6 @@ export default function PCPortfolio() {
     setShowCompanyModal(true);
   };
 
-  // Save company
   const saveCompany = async () => {
     if (!formData.name.trim()) {
       toast.error('Nome da empresa é obrigatório');
@@ -187,7 +172,6 @@ export default function PCPortfolio() {
     }
   };
 
-  // Delete company
   const deleteCompany = async (company: Company) => {
     if (!confirm(`Excluir empresa "${company.name}" e todos os seus computadores?`)) return;
 
@@ -206,7 +190,6 @@ export default function PCPortfolio() {
     }
   };
 
-  // Open computer modal
   const openComputerModal = (computer?: Computer) => {
     if (computer) {
       setEditingComputer(computer);
@@ -223,7 +206,6 @@ export default function PCPortfolio() {
     setShowComputerModal(true);
   };
 
-  // Save computer
   const saveComputer = async () => {
     if (!selectedCompany) return;
     if (!computerForm.hostname?.trim()) {
@@ -258,13 +240,12 @@ export default function PCPortfolio() {
 
       await fetchComputers(selectedCompany.id);
       setShowComputerModal(false);
-      toast.success(editingComputer ? 'Computador atualizado!' : 'Computador adicionado!');
+      toast.success(editingComputer ? 'Computador atualizado!' : 'Computador adicionido!');
     } catch (error) {
       toast.error('Erro ao salvar computador');
     }
   };
 
-  // Delete computer
   const deleteComputer = async (comp: Computer) => {
     if (!confirm(`Excluir computador "${comp.hostname}"?`)) return;
 
@@ -284,7 +265,6 @@ export default function PCPortfolio() {
 
   const openAgentModal = () => setShowAgentModal(true);
 
-  // Format helpers
   const formatDate = (dateString?: string) => {
     if (!dateString) return '—';
     return new Date(dateString).toLocaleString('pt-BR', {
@@ -306,7 +286,6 @@ export default function PCPortfolio() {
     (c.ipAddress && c.ipAddress.includes(searchTerm))
   );
 
-  // Show login if not authenticated
   if (!isAuthenticated) {
     return <LoginModal onLoginSuccess={() => setIsAuthenticated(true)} />;
   }
@@ -317,9 +296,7 @@ export default function PCPortfolio() {
       <header className="border-b border-zinc-800 bg-zinc-950/95 backdrop-blur sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-600">
-              <Monitor className="h-5 w-5" />
-            </div>
+            <img src="/dbs-logo.png" alt="DBS" className="h-9 w-auto" />
             <div>
               <h1 className="font-semibold text-2xl tracking-tight">PC Portfolio</h1>
               <p className="text-xs text-zinc-500 -mt-1">Inventário de Computadores</p>
@@ -347,49 +324,49 @@ export default function PCPortfolio() {
       </header>
 
       <div className="flex flex-1 max-w-7xl mx-auto w-full">
-        {/* Sidebar */}
-        <div className="w-80 border-r border-zinc-800 p-5 flex flex-col">
-          <div className="flex items-center justify-between mb-3 px-1">
+        {/* Sidebar - REDUZIDA (compacta) */}
+        <div className="w-44 border-r border-zinc-800 p-2 flex flex-col">
+          <div className="flex items-center justify-between mb-2 px-1">
             <div>
-              <h2 className="font-medium text-sm uppercase tracking-widest text-zinc-500">Empresas</h2>
-              <p className="text-xs text-zinc-500">{companies.length} cadastradas</p>
+              <h2 className="font-medium text-[10px] uppercase tracking-widest text-zinc-500">Empresas</h2>
+              <p className="text-[10px] text-zinc-500">{companies.length} cadastradas</p>
             </div>
-            <button onClick={fetchCompanies} className="text-zinc-400 hover:text-white p-1.5 rounded-lg hover:bg-zinc-900">
-              <RefreshCw className="h-4 w-4" />
+            <button onClick={fetchCompanies} className="text-zinc-400 hover:text-white p-1 rounded-lg hover:bg-zinc-900">
+              <RefreshCw className="h-3.5 w-3.5" />
             </button>
           </div>
 
           {isLoading ? (
-            <div className="flex justify-center py-12"><RefreshCw className="animate-spin h-5 w-5 text-zinc-400" /></div>
+            <div className="flex justify-center py-8"><RefreshCw className="animate-spin h-4 w-4 text-zinc-400" /></div>
           ) : companies.length === 0 ? (
-            <div className="text-center py-8 px-3 text-sm text-zinc-500">Nenhuma empresa cadastrada.</div>
+            <div className="text-center py-6 px-2 text-[10px] text-zinc-500">Nenhuma empresa cadastrada.</div>
           ) : (
-            <div className="space-y-1 overflow-auto flex-1 pr-1">
+            <div className="space-y-0.5 overflow-auto flex-1 pr-1">
               {companies.map((company) => (
                 <div
                   key={company.id}
                   onClick={() => selectCompany(company)}
-                  className={`group flex items-center justify-between rounded-xl px-3 py-3 cursor-pointer transition-all border ${
+                  className={`group flex items-center justify-between rounded-lg px-2 py-1.5 cursor-pointer transition-all border text-xs ${
                     selectedCompany?.id === company.id 
                       ? 'bg-zinc-900 border-zinc-700' 
                       : 'hover:bg-zinc-900/60 border-transparent hover:border-zinc-800'
                   }`}
                 >
-                  <div className="flex items-center gap-3 min-w-0">
-                    <div className="h-9 w-9 rounded-xl bg-zinc-800 flex items-center justify-center flex-shrink-0">
-                      <Building2 className="h-4.5 w-4.5 text-zinc-400" />
+                  <div className="flex items-center gap-1.5 min-w-0">
+                    <div className="h-5 w-5 rounded bg-zinc-800 flex items-center justify-center flex-shrink-0">
+                      <Building2 className="h-3 w-3 text-zinc-400" />
                     </div>
                     <div className="min-w-0">
-                      <div className="font-medium truncate">{company.name}</div>
-                      <div className="text-xs text-zinc-500">{company._count?.computers || 0} PC(s)</div>
+                      <div className="font-medium truncate text-xs leading-none">{company.name}</div>
+                      <div className="text-[9px] text-zinc-500 leading-none mt-0.5">{company._count?.computers || 0} PC(s)</div>
                     </div>
                   </div>
-                  <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition">
-                    <button onClick={(e) => { e.stopPropagation(); openCompanyModal(company); }} className="p-1.5 hover:bg-zinc-800 rounded-md text-zinc-400 hover:text-zinc-200">
-                      <Edit2 className="h-3.5 w-3.5" />
+                  <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition">
+                    <button onClick={(e) => { e.stopPropagation(); openCompanyModal(company); }} className="p-0.5 hover:bg-zinc-800 rounded text-zinc-400 hover:text-zinc-200">
+                      <Edit2 className="h-2.5 w-2.5" />
                     </button>
-                    <button onClick={(e) => { e.stopPropagation(); deleteCompany(company); }} className="p-1.5 hover:bg-zinc-800 rounded-md text-red-400 hover:text-red-300">
-                      <Trash2 className="h-3.5 w-3.5" />
+                    <button onClick={(e) => { e.stopPropagation(); deleteCompany(company); }} className="p-0.5 hover:bg-zinc-800 rounded text-red-400 hover:text-red-300">
+                      <Trash2 className="h-2.5 w-2.5" />
                     </button>
                   </div>
                 </div>
@@ -397,12 +374,12 @@ export default function PCPortfolio() {
             </div>
           )}
 
-          <div className="mt-auto pt-4 border-t border-zinc-800 text-xs text-zinc-500 px-1">
+          <div className="mt-auto pt-3 border-t border-zinc-800 text-[10px] text-zinc-500 px-1">
             {selectedCompany && (
               <div>
-                <div className="font-mono text-[10px] bg-zinc-900 px-2 py-1 rounded mb-1.5 truncate">{selectedCompany.apiKey}</div>
-                <button onClick={() => copyToClipboard(selectedCompany.apiKey, "API Key")} className="flex items-center gap-1.5 text-blue-400 hover:text-blue-300">
-                  <Copy className="h-3 w-3" /> Copiar API Key
+                <div className="font-mono text-[9px] bg-zinc-900 px-1.5 py-0.5 rounded mb-1 truncate">{selectedCompany.apiKey}</div>
+                <button onClick={() => copyToClipboard(selectedCompany.apiKey, "API Key")} className="flex items-center gap-1 text-blue-400 hover:text-blue-300 text-[10px]">
+                  <Copy className="h-2.5 w-2.5" /> Copiar API Key
                 </button>
               </div>
             )}
@@ -425,7 +402,7 @@ export default function PCPortfolio() {
           ) : (
             <>
               {/* Header */}
-              <div className="border-b border-zinc-800 px-8 py-5 flex items-center justify-between">
+              <div className="border-b border-zinc-800 px-4 py-3 flex items-center justify-between">
                 <div>
                   <div className="flex items-center gap-3">
                     <h2 className="text-3xl font-semibold tracking-tight">{selectedCompany.name}</h2>
@@ -473,7 +450,7 @@ export default function PCPortfolio() {
               </div>
 
               {/* Table */}
-              <div className="px-8 pb-8 flex-1 overflow-auto">
+              <div className="px-4 pb-8 flex-1 overflow-x-auto">
                 {computers.length === 0 ? (
                   <div className="py-16 text-center border border-dashed border-zinc-800 rounded-2xl">
                     <Monitor className="mx-auto mb-4 h-10 w-10 text-zinc-600" />
@@ -482,48 +459,45 @@ export default function PCPortfolio() {
                   </div>
                 ) : (
                   <div className="card overflow-hidden">
-                    <table className="w-full text-sm">
+                    <table className="w-full text-[10px] min-w-[1180px]">
                       <thead>
-                        <tr>
-                          <th>Hostname</th>
-                          <th>Fabricante / Modelo</th>
-                          <th>CPU</th>
-                          <th>RAM</th>
-                          <th>Disco</th>
-                          <th>SO</th>
-                          <th>Instalação SO</th>
-                          <th>Última Inicialização</th>
-                          <th>IP</th>
-                          <th>Última Atualização</th>
-                          <th className="text-right">Ações</th>
+                        <tr className="text-left">
+                          <th className="px-2 py-1.5 font-medium text-zinc-400">Hostname</th>
+                          <th className="px-2 py-1.5 font-medium text-zinc-400">Fabricante/Modelo</th>
+                          <th className="px-2 py-1.5 font-medium text-zinc-400">CPU</th>
+                          <th className="px-2 py-1.5 font-medium text-zinc-400">RAM</th>
+                          <th className="px-2 py-1.5 font-medium text-zinc-400">Disco</th>
+                          <th className="px-2 py-1.5 font-medium text-zinc-400">SO / Versão</th>
+                          <th className="px-2 py-1.5 font-medium text-zinc-400">Inst. SO</th>
+                          <th className="px-2 py-1.5 font-medium text-zinc-400">Últ. Boot</th>
+                          <th className="px-2 py-1.5 font-medium text-zinc-400">IP</th>
+                          <th className="px-2 py-1.5 font-medium text-zinc-400">Atualizado</th>
+                          <th className="px-2 py-1.5 font-medium text-right text-zinc-400">Ações</th>
                         </tr>
                       </thead>
                       <tbody>
                         {filteredComputers.map((comp) => (
-                          <tr key={comp.id} className="computer-row hover:bg-zinc-900/70">
-                            <td className="font-medium">
-                              {comp.hostname}
-                              {comp.serialNumber && <div className="text-[10px] text-zinc-500">SN: {comp.serialNumber}</div>}
+                          <tr key={comp.id} className="computer-row hover:bg-zinc-900/70 border-t border-zinc-800">
+                            <td className="px-2 py-1 font-medium whitespace-nowrap">{comp.hostname}</td>
+                            <td className="px-2 py-1 whitespace-nowrap text-zinc-300">
+                              {comp.manufacturer ? `${comp.manufacturer} / ${comp.model || ''}` : '—'}
                             </td>
-                            <td>
-                              {comp.manufacturer ? <div>{comp.manufacturer}<br/><span className="text-xs text-zinc-400">{comp.model}</span></div> : '—'}
+                            <td className="px-2 py-1 whitespace-nowrap text-zinc-300">
+                              {comp.cpu ? (comp.cpuCores ? `${comp.cpu} (${comp.cpuCores})` : comp.cpu) : '—'}
                             </td>
-                            <td>
-                              {comp.cpu ? <div>{comp.cpu}{comp.cpuCores && <span className="spec-badge ml-2">{comp.cpuCores} núcleos</span>}</div> : '—'}
+                            <td className="px-2 py-1 whitespace-nowrap">{formatGB(comp.ramGB)}</td>
+                            <td className="px-2 py-1 whitespace-nowrap">{formatGB(comp.diskGB)}</td>
+                            <td className="px-2 py-1 whitespace-nowrap text-zinc-300">
+                              {comp.os ? `${comp.os} ${comp.osVersion || ''}`.trim() : '—'}
                             </td>
-                            <td>{formatGB(comp.ramGB)}</td>
-                            <td>{formatGB(comp.diskGB)}</td>
-                            <td>
-                              {comp.os ? <div>{comp.os}<br/><span className="text-xs text-zinc-400">{comp.osVersion}</span></div> : '—'}
-                            </td>
-                            <td className="text-xs">{formatDateOnly(comp.osInstallDate)}</td>
-                            <td className="text-xs">{formatDate(comp.lastBootTime)}</td>
-                            <td className="font-mono text-xs text-zinc-400">{comp.ipAddress || '—'}</td>
-                            <td className="text-xs text-zinc-400 whitespace-nowrap">{formatDate(comp.lastSeen)}</td>
-                            <td className="text-right">
-                              <div className="flex gap-1 justify-end">
-                                <button onClick={() => openComputerModal(comp)} className="p-2 text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800 rounded-lg"><Edit2 className="h-4 w-4" /></button>
-                                <button onClick={() => deleteComputer(comp)} className="p-2 text-red-400 hover:text-red-300 hover:bg-zinc-800 rounded-lg"><Trash2 className="h-4 w-4" /></button>
+                            <td className="px-2 py-1 whitespace-nowrap text-[9px]">{formatDateOnly(comp.osInstallDate)}</td>
+                            <td className="px-2 py-1 whitespace-nowrap text-[9px]">{formatDate(comp.lastBootTime)}</td>
+                            <td className="px-2 py-1 font-mono text-[9px] text-zinc-400 whitespace-nowrap">{comp.ipAddress || '—'}</td>
+                            <td className="px-2 py-1 text-[9px] text-zinc-400 whitespace-nowrap">{formatDate(comp.lastSeen)}</td>
+                            <td className="px-2 py-1 text-right">
+                              <div className="flex gap-0.5 justify-end">
+                                <button onClick={() => openComputerModal(comp)} className="p-1 text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800 rounded"><Edit2 className="h-3 w-3" /></button>
+                                <button onClick={() => deleteComputer(comp)} className="p-1 text-red-400 hover:text-red-300 hover:bg-zinc-800 rounded"><Trash2 className="h-3 w-3" /></button>
                               </div>
                             </td>
                           </tr>
@@ -538,8 +512,7 @@ export default function PCPortfolio() {
         </div>
       </div>
 
-      {/* Modals (Company, Computer, Agent) - same as before but with new fields in computer modal */}
-      {/* Company Modal */}
+      {/* Modals */}
       {showCompanyModal && (
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-[100] p-6" onClick={() => setShowCompanyModal(false)}>
           <div className="modal card w-full max-w-md p-6" onClick={e => e.stopPropagation()}>
@@ -562,7 +535,6 @@ export default function PCPortfolio() {
         </div>
       )}
 
-      {/* Computer Modal with new fields */}
       {showComputerModal && (
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-[100] p-6" onClick={() => setShowComputerModal(false)}>
           <div className="modal card w-full max-w-2xl max-h-[92vh] overflow-auto p-6" onClick={e => e.stopPropagation()}>
@@ -615,12 +587,11 @@ export default function PCPortfolio() {
         </div>
       )}
 
-      {/* Improved Agent Modal */}
       {showAgentModal && selectedCompany && (
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-[100] p-6" onClick={() => setShowAgentModal(false)}>
           <div className="modal card w-full max-w-3xl p-7 overflow-auto max-h-[92vh]" onClick={e => e.stopPropagation()}>
             <h3 className="text-2xl font-semibold mb-1">Agente para Computadores</h3>
-            <p className="text-zinc-400 mb-5">Instale o script em cada PC. Ele reporta automaticamente (incluindo data de instalação do SO e última inicialização).</p>
+            <p className="text-zinc-400 mb-5">Instale o script em cada PC. Ele reporta automaticamente.</p>
 
             <div className="bg-zinc-950 border border-zinc-800 p-4 rounded-xl mb-5">
               <div className="text-xs text-zinc-400">API Key desta empresa</div>
@@ -631,31 +602,17 @@ export default function PCPortfolio() {
             </div>
 
             <div className="space-y-6 text-sm">
-              {/* Python */}
-              <div>
-                <div className="font-semibold mb-1 flex items-center gap-2">🐍 Python (recomendado - Windows, Linux, macOS)</div>
-                <div className="bg-black p-4 rounded-xl font-mono text-xs overflow-auto border border-zinc-800">
-                  <pre>{`pip install requests psutil wmi   # Windows: pip install wmi
-
-API_KEY="${selectedCompany.apiKey}"
-# Baixe o script completo em: /scripts/agent.py
-python agent.py --api-key $API_KEY --url https://seu-dominio.vercel.app/api/agent/report`}</pre>
-                </div>
-                <div className="text-[10px] text-zinc-500 mt-1">O script melhorado agora coleta <strong>osInstallDate</strong> e <strong>lastBootTime</strong>.</div>
-              </div>
-
-              {/* PowerShell */}
               <div>
                 <div className="font-semibold mb-1 flex items-center gap-2">🪟 PowerShell (Windows)</div>
                 <div className="bg-black p-4 rounded-xl font-mono text-xs overflow-auto border border-zinc-800">
                   <pre>{`$apiKey = "${selectedCompany.apiKey}"
-# Baixe o script completo em: /scripts/agent.ps1
-.\\agent.ps1 -ApiKey $apiKey -Url "https://seu-dominio.vercel.app/api/agent/report"`}</pre>
+# Baixe o script em: /scripts/agent.ps1
+.\\\\agent.ps1 -ApiKey $apiKey -Url "https://dbs-pc-portfolio.vercel.app/api/agent/report"`}</pre>
                 </div>
               </div>
 
               <div className="text-xs bg-zinc-900 border border-zinc-800 p-3 rounded">
-                <strong>Dica:</strong> Agende o script para rodar diariamente (Task Scheduler no Windows ou cron no Linux).
+                <strong>Dica:</strong> Agende o script para rodar diariamente (Task Scheduler no Windows).
               </div>
             </div>
 

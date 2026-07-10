@@ -111,7 +111,7 @@ pip install wmi
 Execute:
 
 ```bash
-python scripts/agent.py --api-key SUA_API_KEY --url https://seu-app.vercel.app/api/agent/report
+python scripts/agent.py --api-key SUA_API_KEY --url https://dbs-pc-portfolio.vercel.app/api/agent/report
 ```
 
 **PowerShell (Windows):**
