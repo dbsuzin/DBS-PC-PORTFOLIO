@@ -18,6 +18,7 @@ interface Computer {
   cpuCores?: number;
   ramGB?: number;
   diskGB?: number;
+  disks?: string;
   gpu?: string;
   os?: string;
   osVersion?: string;
@@ -308,7 +309,7 @@ export default function PCPortfolio() {
       <header className="border-b border-zinc-800 bg-zinc-950/95 backdrop-blur sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <img src="/dbs-logo.png" alt="DBS" className="h-24 w-auto" />
+            <img src="/dbs-logo.png" alt="DBS" className="h-40 w-auto" />
             <div>
               <h1 className="font-semibold text-2xl tracking-tight">PC Portfolio</h1>
               <p className="text-xs text-zinc-500 -mt-1">Inventário de Computadores</p>

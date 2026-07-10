@@ -30,6 +30,7 @@ model Computer {
   cpuCores      Int?
   ramGB         Float?
   diskGB        Float?
+  disks         String?   // breakdown ex: "C: 500GB + D: 1000GB"
   gpu           String?
   os            String?
   osVersion     String?

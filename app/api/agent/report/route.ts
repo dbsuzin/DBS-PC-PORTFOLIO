@@ -76,6 +76,7 @@ export async function POST(request: NextRequest) {
       osInstallDate,
       lastBootTime,
       ipAddress: computerData.ipAddress || null,
+      disks: computerData.disks || null,
       macAddress: computerData.macAddress || null,
       biosVersion: computerData.biosVersion || null,
       notes: computerData.notes || null,
