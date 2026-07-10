@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { 
   Plus, Building2, Monitor, Copy, Trash2, Edit2, RefreshCw, 
-  Download, Key, X, FileSpreadsheet 
+  Download, X, FileSpreadsheet 
 } from 'lucide-react';
 import { toast } from 'sonner';
 import LoginModal from './components/LoginModal';
@@ -434,9 +434,6 @@ export default function PCPortfolio() {
                   <button onClick={exportToExcel} className="btn btn-secondary flex items-center gap-2 text-sm">
                     <FileSpreadsheet className="h-4 w-4" /> Exportar Excel
                   </button>
-                  <button onClick={openAgentModal} className="btn btn-secondary flex items-center gap-2 text-sm">
-                    <Key className="h-4 w-4" /> Agente
-                  </button>
                   <button onClick={() => openComputerModal()} className="btn btn-primary flex items-center gap-2">
                     <Plus className="h-4 w-4" /> Adicionar PC
                   </button>
@@ -620,32 +617,86 @@ export default function PCPortfolio() {
         </div>
       )}
 
-      {showAgentModal && selectedCompany && (
+      {showAgentModal && (
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-[100] p-6" onClick={() => setShowAgentModal(false)}>
           <div className="modal card w-full max-w-3xl p-7 overflow-auto max-h-[92vh]" onClick={e => e.stopPropagation()}>
-            <h3 className="text-2xl font-semibold mb-1">Agente para Computadores</h3>
-            <p className="text-zinc-400 mb-5">Instale o script em cada PC. Ele reporta automaticamente.</p>
-
-            <div className="bg-zinc-950 border border-zinc-800 p-4 rounded-xl mb-5">
-              <div className="text-xs text-zinc-400">API Key desta empresa</div>
-              <div className="flex items-center gap-2 mt-1">
-                <div className="api-key flex-1 text-sm font-mono">{selectedCompany.apiKey}</div>
-                <button onClick={() => copyToClipboard(selectedCompany.apiKey, "API Key")} className="btn btn-secondary text-xs px-3 py-1.5">Copiar</button>
+            <div className="flex justify-between items-start mb-1">
+              <div>
+                <h3 className="text-2xl font-semibold mb-1">Agente para Computadores</h3>
+                <p className="text-zinc-400 mb-5">Instale o script em cada PC. Ele reporta automaticamente as configurações.</p>
               </div>
+              <button onClick={() => setShowAgentModal(false)}><X className="h-5 w-5" /></button>
             </div>
 
+            {selectedCompany ? (
+              <div className="bg-zinc-950 border border-zinc-800 p-4 rounded-xl mb-5">
+                <div className="text-xs text-zinc-400 mb-2">API Key da empresa <span className="text-zinc-200 font-semibold">{selectedCompany.name}</span></div>
+                <div className="flex items-center gap-2">
+                  <div className="api-key flex-1 text-sm font-mono">{selectedCompany.apiKey}</div>
+                  <button onClick={() => copyToClipboard(selectedCompany.apiKey, "API Key")} className="btn btn-secondary text-xs px-3 py-1.5">Copiar</button>
+                </div>
+              </div>
+            ) : (
+              <div className="bg-yellow-950/40 border border-yellow-800/60 text-yellow-200 p-3 rounded-xl mb-5 text-sm">
+                ⚠️ Selecione uma empresa na barra lateral para ver a API Key correspondente.
+              </div>
+            )}
+
             <div className="space-y-6 text-sm">
+              {/* Passo 1 */}
               <div>
-                <div className="font-semibold mb-1 flex items-center gap-2">🪟 PowerShell (Windows)</div>
-                <div className="bg-black p-4 rounded-xl font-mono text-xs overflow-auto border border-zinc-800">
-                  <pre>{`$apiKey = "${selectedCompany.apiKey}"
-# Baixe o script em: /scripts/agent.ps1
-.\\agent.ps1 -ApiKey $apiKey -Url "https://dbs-pc-portfolio.vercel.app/api/agent/report"`}</pre>
+                <div className="font-semibold mb-2 text-zinc-200 flex items-center gap-2">
+                  <span className="inline-flex items-center justify-center h-6 w-6 rounded-full bg-blue-600 text-white text-xs font-bold">1</span>
+                  Baixe o script agent.ps1
+                </div>
+                <p className="text-xs text-zinc-400 mb-2 ml-8">Salve o arquivo em uma pasta acessível no computador (ex: <code className="bg-zinc-900 px-1.5 py-0.5 rounded">C:\PCPortfolio\</code>).</p>
+                <div className="ml-8">
+                  <a 
+                    href="/scripts/agent.ps1" 
+                    download
+                    className="btn btn-secondary text-xs inline-flex items-center gap-2"
+                  >
+                    <Download className="h-3.5 w-3.5" /> Baixar agent.ps1
+                  </a>
                 </div>
               </div>
 
-              <div className="text-xs bg-zinc-900 border border-zinc-800 p-3 rounded">
-                <strong>Dica:</strong> Agende o script para rodar diariamente (Task Scheduler no Windows).
+              {/* Passo 2 */}
+              <div>
+                <div className="font-semibold mb-2 text-zinc-200 flex items-center gap-2">
+                  <span className="inline-flex items-center justify-center h-6 w-6 rounded-full bg-blue-600 text-white text-xs font-bold">2</span>
+                  Execute no PowerShell (como Administrador)
+                </div>
+                <p className="text-xs text-zinc-400 mb-2 ml-8">Abra o PowerShell na pasta onde salvou o script e execute:</p>
+                <div className="ml-8">
+                  <div className="bg-black p-4 rounded-xl font-mono text-xs overflow-auto border border-zinc-800 relative group">
+                    <button
+                      onClick={() => copyToClipboard(
+                        `powershell -ExecutionPolicy Bypass -File ".\\agent.ps1" -ApiKey "${selectedCompany?.apiKey || 'SUA_API_KEY'}"`,
+                        "Comando"
+                      )}
+                      className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs px-2 py-1 rounded"
+                    >
+                      <Copy className="h-3 w-3 inline mr-1" /> Copiar
+                    </button>
+                    <pre className="whitespace-pre-wrap break-all pr-16">{`powershell -ExecutionPolicy Bypass -File ".\\agent.ps1" -ApiKey "${selectedCompany?.apiKey || 'SUA_API_KEY'}"`}</pre>
+                  </div>
+                </div>
+              </div>
+
+              {/* Passo 3 (opcional) */}
+              <div>
+                <div className="font-semibold mb-2 text-zinc-200 flex items-center gap-2">
+                  <span className="inline-flex items-center justify-center h-6 w-6 rounded-full bg-blue-600 text-white text-xs font-bold">3</span>
+                  Agende para execução automática (opcional)
+                </div>
+                <p className="text-xs text-zinc-400 ml-8">
+                  Use o <strong>Task Scheduler</strong> do Windows para agendar o script para rodar diariamente e manter o inventário sempre atualizado.
+                </p>
+              </div>
+
+              <div className="text-xs bg-zinc-900 border border-zinc-800 p-3 rounded-lg text-zinc-300">
+                <strong className="text-zinc-100">💡 Dica:</strong> Cada empresa possui uma API Key única. Certifique-se de usar a chave correta para cada computador.
               </div>
             </div>
 
