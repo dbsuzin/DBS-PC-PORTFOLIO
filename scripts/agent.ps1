@@ -38,6 +38,14 @@ try {
     $disks = Get-CimInstance Win32_LogicalDisk -Filter "DriveType=3"
     $total = ($disks | Measure-Object -Property Size -Sum).Sum
     $info.diskGB = [double]([math]::Round($total / 1GB, 1))
+
+    # Detalhes por disco (SSD + HD)
+    $diskList = @()
+    foreach ($d in $disks) {
+        $sizeGB = [math]::Round($d.Size / 1GB, 0)
+        $diskList += "$($d.DeviceID) ${sizeGB}GB"
+    }
+    $info.disks = ($diskList -join " + ")
 } catch {}
 
 # === DATAS (MÉTODO MAIS ROBUSTO COM MÚLTIPLOS FALLBACKS) ===
