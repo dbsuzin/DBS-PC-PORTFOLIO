@@ -1,0 +1,38 @@
+================================================================================
+SOLUÇÃO PARA O ERRO DO AGENTE (PowerShell)
+================================================================================
+
+O erro que você está vendo:
+"O argumento '.\scripts\agent.ps1' para o parâmetro -File não existe"
+
+Isso é porque você está executando de dentro da pasta C:\Script_dbs
+mas o arquivo está em C:\Script_dbs\scripts\agent.ps1
+
+================================================================================
+COMANDOS EXATOS - COPIE E COLE AGORA (um de cada vez):
+================================================================================
+
+OPÇÃO 1 (FAÇA ISSO AGORA - MAIS FÁCIL):
+
+cd "C:\Script_dbs\scripts"
+powershell -ExecutionPolicy Bypass -File ".\agent.ps1" -ApiKey "cmre532k50001q4my81fh5uk2"
+
+OPÇÃO 2 (sem mudar de pasta):
+
+powershell -ExecutionPolicy Bypass -File "C:\Script_dbs\scripts\agent.ps1" -ApiKey "cmre532k50001q4my81fh5uk2"
+
+OPÇÃO 3 (para facilitar no futuro):
+
+1. Copie o arquivo agent.ps1 para a pasta C:\Script_dbs\
+2. Depois rode só:
+   powershell -ExecutionPolicy Bypass -File ".\agent.ps1" -ApiKey "cmre532k50001q4my81fh5uk2"
+
+================================================================================
+APÓS RODAR COM SUCESSO:
+================================================================================
+
+- Volte no navegador no site https://dbs-pc-portfolio.vercel.app/
+- Pressione Ctrl + Shift + R (hard refresh)
+- A tabela deve mostrar os discos físicos + % livre
+
+================================================================================

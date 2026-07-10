@@ -1,7 +1,29 @@
-# PC Portfolio Agent - PowerShell (Windows) - VERSAO ROBUSTA
+# =====================================================
+# PC PORTFOLIO AGENT - POWER SHELL (Windows)
+# =====================================================
 #
-# Se der erro de "nao esta assinado digitalmente", rode:
-# powershell -ExecutionPolicy Bypass -File ".\agent.ps1" -ApiKey "SUA_CHAVE"
+# ERRO QUE VOCÊ ESTÁ VENDO AGORA:
+# "O argumento '.\scripts\agent.ps1' para o parâmetro -File não existe"
+#
+# VOCÊ ESTÁ AQUI:   PS C:\Script_dbs>
+# O ARQUIVO ESTÁ EM: C:\Script_dbs\scripts\agent.ps1
+#
+# =====================================================
+# SOLUÇÃO - COPIE E COLE EXATAMENTE UMA DAS LINHAS ABAIXO:
+# =====================================================
+#
+# OPÇÃO 1 (RECOMENDADA - faça isso agora):
+# cd "C:\Script_dbs\scripts"
+# powershell -ExecutionPolicy Bypass -File ".\agent.ps1" -ApiKey "cmre532k50001q4my81fh5uk2"
+#
+# OPÇÃO 2 (sem cd, caminho completo):
+# powershell -ExecutionPolicy Bypass -File "C:\Script_dbs\scripts\agent.ps1" -ApiKey "cmre532k50001q4my81fh5uk2"
+#
+# OPÇÃO 3 (mais fácil no futuro):
+# 1. Copie este arquivo agent.ps1 para dentro de C:\Script_dbs\
+# 2. Rode: powershell -ExecutionPolicy Bypass -File ".\agent.ps1" -ApiKey "cmre532k50001q4my81fh5uk2"
+#
+# =====================================================
 
 param(
     [Parameter(Mandatory=$true)]
