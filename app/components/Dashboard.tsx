@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { 
   Monitor, Building2, Wifi, WifiOff, AlertTriangle, HardDrive, 
-  Clock, ChevronRight, Activity
+  Clock, ChevronRight, Activity, X, ExternalLink
 } from 'lucide-react';
 
 interface Stats {
@@ -20,13 +20,43 @@ interface Stats {
   recentComputers: { hostname: string; lastSeen: string; manufacturer: string | null; model: string | null }[];
 }
 
-interface DashboardProps {
-  onSelectCompany?: (id: string) => void;
+interface FilteredComputer {
+  id: string;
+  hostname: string;
+  manufacturer: string | null;
+  model: string | null;
+  lastSeen: string;
+  disks: string | null;
+  diskGB: number | null;
+  warrantyExpiry: string | null;
+  ipAddress: string | null;
+  company: { id: string; name: string };
 }
+
+interface FilterGroup {
+  company: { id: string; name: string };
+  computers: FilteredComputer[];
+}
+
+interface DashboardProps {
+  onSelectCompany: (companyId: string) => void;
+}
+
+const FILTER_LABELS: Record<string, { title: string; icon: any; color: string }> = {
+  online: { title: 'Computadores Online', icon: Wifi, color: 'text-emerald-400' },
+  stale: { title: 'Computadores Stale (1-7 dias)', icon: Clock, color: 'text-amber-400' },
+  offline: { title: 'Computadores Offline', icon: WifiOff, color: 'text-red-400' },
+  lowDisk: { title: 'Disco com Pouco Espaço', icon: HardDrive, color: 'text-orange-400' },
+  warranty: { title: 'Garantia Vencendo (90 dias)', icon: AlertTriangle, color: 'text-yellow-400' },
+};
 
 export default function Dashboard({ onSelectCompany }: DashboardProps) {
   const [stats, setStats] = useState<Stats | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [activeFilter, setActiveFilter] = useState<string | null>(null);
+  const [filteredGroups, setFilteredGroups] = useState<FilterGroup[]>([]);
+  const [filteredTotal, setFilteredTotal] = useState(0);
+  const [loadingFilter, setLoadingFilter] = useState(false);
 
   useEffect(() => {
     fetchStats();
@@ -45,6 +75,44 @@ export default function Dashboard({ onSelectCompany }: DashboardProps) {
     }
   };
 
+  const handleCardClick = async (filter: string) => {
+    if (filter === 'all') return;
+    setActiveFilter(filter);
+    setLoadingFilter(true);
+    setFilteredGroups([]);
+
+    try {
+      const res = await fetch(`/api/stats/filtered?filter=${filter}`);
+      if (res.ok) {
+        const data = await res.json();
+        setFilteredGroups(data.groups || []);
+        setFilteredTotal(data.total || 0);
+      }
+    } catch (error) {
+      console.error('Error fetching filtered:', error);
+    } finally {
+      setLoadingFilter(false);
+    }
+  };
+
+  const handleSelectComputer = (companyId: string) => {
+    onSelectCompany(companyId);
+    setActiveFilter(null);
+  };
+
+  const formatLastSeen = (d: string) => {
+    const date = new Date(d);
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
+
+    if (diffMins < 60) return `${diffMins}min atrás`;
+    if (diffHours < 24) return `${diffHours}h atrás`;
+    return `${diffDays}d atrás`;
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-20">
@@ -56,12 +124,12 @@ export default function Dashboard({ onSelectCompany }: DashboardProps) {
   if (!stats) return null;
 
   const statCards = [
-    { label: 'Total PCs', value: stats.totalComputers, icon: Monitor, color: 'text-sky-400', bg: 'bg-sky-500/10' },
-    { label: 'Online', value: stats.online, icon: Wifi, color: 'text-emerald-400', bg: 'bg-emerald-500/10' },
-    { label: 'Stale (1-7d)', value: stats.stale, icon: Clock, color: 'text-amber-400', bg: 'bg-amber-500/10' },
-    { label: 'Offline', value: stats.offline, icon: WifiOff, color: 'text-red-400', bg: 'bg-red-500/10' },
-    { label: 'Disco Baixo', value: stats.lowDisk, icon: HardDrive, color: 'text-orange-400', bg: 'bg-orange-500/10' },
-    { label: 'Garantia (90d)', value: stats.warrantyExpiring, icon: AlertTriangle, color: 'text-yellow-400', bg: 'bg-yellow-500/10' },
+    { label: 'Total PCs', value: stats.totalComputers, filter: 'all', icon: Monitor, color: 'text-sky-400', bg: 'bg-sky-500/10' },
+    { label: 'Online', value: stats.online, filter: 'online', icon: Wifi, color: 'text-emerald-400', bg: 'bg-emerald-500/10' },
+    { label: 'Stale (1-7d)', value: stats.stale, filter: 'stale', icon: Clock, color: 'text-amber-400', bg: 'bg-amber-500/10' },
+    { label: 'Offline', value: stats.offline, filter: 'offline', icon: WifiOff, color: 'text-red-400', bg: 'bg-red-500/10' },
+    { label: 'Disco Baixo', value: stats.lowDisk, filter: 'lowDisk', icon: HardDrive, color: 'text-orange-400', bg: 'bg-orange-500/10' },
+    { label: 'Garantia (90d)', value: stats.warrantyExpiring, filter: 'warranty', icon: AlertTriangle, color: 'text-yellow-400', bg: 'bg-yellow-500/10' },
   ];
 
   return (
@@ -78,7 +146,11 @@ export default function Dashboard({ onSelectCompany }: DashboardProps) {
 
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
         {statCards.map((card) => (
-          <div key={card.label} className="card p-4 text-center">
+          <div
+            key={card.label}
+            onClick={() => handleCardClick(card.filter)}
+            className={`card p-4 text-center transition-all hover:border-sky-500/30 hover:shadow-lg hover:shadow-sky-500/5 cursor-pointer ${activeFilter === card.filter ? 'border-sky-500/40 shadow-lg shadow-sky-500/10' : ''}`}
+          >
             <div className={`mx-auto mb-2 h-8 w-8 flex items-center justify-center rounded-lg ${card.bg}`}>
               <card.icon className={`h-4 w-4 ${card.color}`} />
             </div>
@@ -144,6 +216,74 @@ export default function Dashboard({ onSelectCompany }: DashboardProps) {
           ))}
         </div>
       </div>
+
+      {activeFilter && FILTER_LABELS[activeFilter] && (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-[100] p-6" onClick={() => setActiveFilter(null)}>
+          <div className="modal card w-full max-w-4xl max-h-[85vh] overflow-auto p-6 shadow-2xl shadow-black/50" onClick={e => e.stopPropagation()}>
+            <div className="flex justify-between items-center mb-5">
+              <div className="flex items-center gap-3">
+                {React.createElement(FILTER_LABELS[activeFilter].icon, { className: `h-5 w-5 ${FILTER_LABELS[activeFilter].color}` })}
+                <h3 className="text-xl font-semibold glow-text">{FILTER_LABELS[activeFilter].title}</h3>
+                <span className="text-xs px-2.5 py-0.5 rounded-full bg-zinc-800 text-zinc-400">{filteredTotal} total</span>
+              </div>
+              <button onClick={() => setActiveFilter(null)}><X className="h-5 w-5" /></button>
+            </div>
+
+            {loadingFilter ? (
+              <div className="py-16 text-center">
+                <Activity className="mx-auto h-6 w-6 text-sky-400 animate-pulse mb-3" />
+                <p className="text-sm text-zinc-400">Carregando...</p>
+              </div>
+            ) : filteredGroups.length === 0 ? (
+              <div className="py-16 text-center text-zinc-500 text-sm">
+                Nenhum computador encontrado.
+              </div>
+            ) : (
+              <div className="space-y-5">
+                {filteredGroups.map((group) => (
+                  <div key={group.company.id}>
+                    <button
+                      onClick={() => handleSelectComputer(group.company.id)}
+                      className="flex items-center gap-2 mb-2 group/company hover:text-sky-400 transition-colors"
+                    >
+                      <Building2 className="h-4 w-4 text-sky-400" />
+                      <span className="font-semibold text-sm">{group.company.name}</span>
+                      <span className="text-xs text-zinc-500">({group.computers.length} PC{group.computers.length > 1 ? 's' : ''})</span>
+                      <ExternalLink className="h-3 w-3 text-zinc-600 group-hover/company:text-sky-400 transition-colors" />
+                    </button>
+                    <div className="ml-6 border-l border-zinc-800 pl-3 space-y-1">
+                      {group.computers.map((comp) => (
+                        <button
+                          key={comp.id}
+                          onClick={() => handleSelectComputer(group.company.id)}
+                          className="w-full flex items-center justify-between py-1.5 px-2 rounded hover:bg-zinc-900/50 text-xs text-left transition-colors group/row"
+                        >
+                          <div className="flex items-center gap-3 min-w-0">
+                            <Monitor className="h-3.5 w-3.5 text-zinc-500 flex-shrink-0" />
+                            <span className="font-medium truncate">{comp.hostname}</span>
+                            <span className="text-zinc-500 truncate hidden sm:inline">{comp.manufacturer} {comp.model}</span>
+                            {comp.ipAddress && <span className="font-mono text-zinc-600 hidden md:inline">{comp.ipAddress}</span>}
+                          </div>
+                          <div className="flex items-center gap-2 text-zinc-500 flex-shrink-0">
+                            {activeFilter === 'lowDisk' && comp.disks && (
+                              <span className="text-orange-400/80 text-[10px] max-w-[180px] truncate hidden lg:inline">{comp.disks}</span>
+                            )}
+                            {activeFilter === 'warranty' && comp.warrantyExpiry && (
+                              <span className="text-yellow-400/80 text-[10px]">{new Date(comp.warrantyExpiry).toLocaleDateString('pt-BR')}</span>
+                            )}
+                            <span className="text-[10px]">{formatLastSeen(comp.lastSeen)}</span>
+                            <ChevronRight className="h-3 w-3 opacity-0 group-hover/row:opacity-100 transition-opacity" />
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

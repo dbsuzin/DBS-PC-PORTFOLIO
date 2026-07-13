@@ -15,6 +15,39 @@ model Company {
   createdAt DateTime    @default(now())
   updatedAt DateTime    @updatedAt
   computers Computer[]
+  devices   Device[]
+}
+
+model Device {
+  id            String    @id @default(cuid())
+  companyId     String
+  company       Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  name          String
+  manufacturer  String?
+  model         String?
+  serialNumber  String?
+  imei          String?
+  os            String?
+  osVersion     String?
+  storageGB     Float?
+  ramGB         Float?
+  phoneNumber   String?
+  batteryHealth Int?
+  ipAddress     String?
+  macAddress    String?
+  notes         String?
+
+  purchaseDate  DateTime?
+  warrantyExpiry DateTime?
+  assetTag      String?
+  status        String?    @default("active")
+
+  lastSeen      DateTime  @default(now())
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  @@unique([companyId, name])
 }
 
 model Computer {
