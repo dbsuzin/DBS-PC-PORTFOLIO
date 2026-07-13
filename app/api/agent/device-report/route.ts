@@ -102,14 +102,22 @@ export async function GET(request: NextRequest) {
 
       <div class="section-title">Detectado Automaticamente</div>
 
-      <div class="detected-info" id="detected-manufacturer"></div>
-      <div class="detected-info" id="detected-model"></div>
-      <div class="detected-info" id="detected-os"></div>
-
-      <input type="hidden" id="f-manufacturer">
-      <input type="hidden" id="f-model">
-      <input type="hidden" id="f-os">
-      <input type="hidden" id="f-osVersion">
+      <div class="field">
+        <label>Fabricante <span class="auto-tag">auto</span></label>
+        <input type="text" id="f-manufacturer" placeholder="Ex: Samsung">
+      </div>
+      <div class="field">
+        <label>Modelo <span class="auto-tag">auto</span></label>
+        <input type="text" id="f-model" placeholder="Ex: Galaxy S23">
+      </div>
+      <div class="field">
+        <label>Sistema Operacional <span class="auto-tag">auto</span></label>
+        <input type="text" id="f-os" placeholder="Ex: Android">
+      </div>
+      <div class="field">
+        <label>Versão do SO <span class="auto-tag">auto</span></label>
+        <input type="text" id="f-osVersion" placeholder="Ex: 14">
+      </div>
 
       <div class="section-title">Informações Adicionais</div>
 
@@ -150,61 +158,106 @@ export async function GET(request: NextRequest) {
       if (ua.includes('iPhone') || ua.includes('iPad')) {
         info.os = 'iOS';
         info.manufacturer = 'Apple';
-        const match = ua.match(/OS (\\d+)_?(\\d*)/);
+        const match = ua.match(/OS (\\d+)[._]?(\\d*)/);
         info.osVersion = match ? match[1] + (match[2] ? '.' + match[2] : '') : '';
         if (ua.includes('iPhone')) {
           const models = {
-            'iPhone15,4': 'iPhone 15', 'iPhone15,5': 'iPhone 15 Plus',
-            'iPhone16,1': 'iPhone 15 Pro', 'iPhone16,2': 'iPhone 15 Pro Max',
-            'iPhone14,7': 'iPhone 14', 'iPhone14,8': 'iPhone 14 Plus',
-            'iPhone15,2': 'iPhone 14 Pro', 'iPhone15,3': 'iPhone 14 Pro Max',
-            'iPhone13,1': 'iPhone 12 mini', 'iPhone13,2': 'iPhone 12',
-            'iPhone13,3': 'iPhone 12 Pro', 'iPhone13,4': 'iPhone 12 Pro Max',
-            'iPhone14,4': 'iPhone 13 mini', 'iPhone14,5': 'iPhone 13',
-            'iPhone14,2': 'iPhone 13 Pro', 'iPhone14,3': 'iPhone 13 Pro Max',
-            'iPhone15,6': 'iPhone 15', 'iPhone15,7': 'iPhone 15 Plus',
-            'iPhone16,3': 'iPhone 15 Pro', 'iPhone16,4': 'iPhone 15 Pro Max',
             'iPhone17,1': 'iPhone 16 Pro', 'iPhone17,2': 'iPhone 16 Pro Max',
             'iPhone17,3': 'iPhone 16', 'iPhone17,4': 'iPhone 16 Plus',
+            'iPhone16,1': 'iPhone 15 Pro', 'iPhone16,2': 'iPhone 15 Pro Max',
+            'iPhone15,4': 'iPhone 15', 'iPhone15,5': 'iPhone 15 Plus',
+            'iPhone15,2': 'iPhone 14 Pro', 'iPhone15,3': 'iPhone 14 Pro Max',
+            'iPhone14,7': 'iPhone 14', 'iPhone14,8': 'iPhone 14 Plus',
+            'iPhone14,2': 'iPhone 13 Pro', 'iPhone14,3': 'iPhone 13 Pro Max',
+            'iPhone14,4': 'iPhone 13 mini', 'iPhone14,5': 'iPhone 13',
+            'iPhone13,1': 'iPhone 12 mini', 'iPhone13,2': 'iPhone 12',
+            'iPhone13,3': 'iPhone 12 Pro', 'iPhone13,4': 'iPhone 12 Pro Max',
+            'iPhone12,1': 'iPhone 11', 'iPhone12,3': 'iPhone 11 Pro',
+            'iPhone12,5': 'iPhone 11 Pro Max',
+            'iPhone11,2': 'iPhone XS', 'iPhone11,4': 'iPhone XS Max',
+            'iPhone11,6': 'iPhone XS Max', 'iPhone11,8': 'iPhone XR',
+            'iPhone10,1': 'iPhone 8', 'iPhone10,4': 'iPhone 8',
+            'iPhone10,2': 'iPhone 8 Plus', 'iPhone10,5': 'iPhone 8 Plus',
+            'iPhone10,3': 'iPhone X', 'iPhone10,6': 'iPhone X',
+            'iPhone14,6': 'iPhone SE 3', 'iPhone12,8': 'iPhone SE 2',
+            'iPhone8,1': 'iPhone 6s', 'iPhone8,4': 'iPhone SE',
           };
-          const idMatch = ua.match(/iPhone([\\d,]+)[\\s]/);
-          info.model = models[idMatch?.[1]] || 'iPhone';
+          const idMatch = ua.match(/iPhone([\\d,]+)[\\s;,)]/);
+          info.model = (idMatch && models[idMatch[1]]) ? models[idMatch[1]] : 'iPhone';
         } else {
           info.model = 'iPad';
         }
       } else if (ua.includes('Android')) {
         info.os = 'Android';
-        const match = ua.match(/Android (\\d+\\.?\\d*)/);
-        info.osVersion = match ? match[1] : '';
-        const manufacturers = {
-          'Samsung': ['SM-', 'GT-', 'Samsung', 'samsung'],
-          'Xiaomi': ['Mi ', 'Redmi', 'POCO', 'Xiaomi', 'xiaomi', 'M2012K11AG', 'M2101K6G'],
-          'Motorola': ['Moto', 'moto', 'Motorola', 'motorola', 'XT'],
-          'OnePlus': ['OnePlus', 'oneplus', 'KB20', 'LE21', 'IN20'],
-          'Huawei': ['Huawei', 'huawei', 'HUAWEI', 'Honor', 'HONOR'],
-          'Google': ['Pixel', 'pixel', 'Pixel'],
-          'Realme': ['Realme', 'realme', 'RMX'],
-          'Nothing': ['Nothing', 'nothing', 'A065'],
-          'OPPO': ['OPPO', 'oppo', 'CPH', 'Reno'],
-          'Vivo': ['vivo', 'Vivo', 'V2'],
-          'LG': ['LG-', 'LG '],
-        };
-        for (const [brand, patterns] of Object.entries(manufacturers)) {
-          if (patterns.some(p => ua.includes(p))) { info.manufacturer = brand; break; }
+        const androidMatch = ua.match(/Android[\\s/]*(\\d+[\\d.]*)/);
+        info.osVersion = androidMatch ? androidMatch[1] : '';
+
+        // 1. Try to get model from Build fingerprint (most reliable)
+        const buildMatch = ua.match(/Build\\/([A-Za-z0-9.]+)/);
+        const buildId = buildMatch ? buildMatch[1] : '';
+
+        // 2. Try to get model from the segment after Android version
+        // Typical: "Linux; Android 13; SM-S908B Build/TP1A..."
+        const segMatch = ua.match(/Android[\\s/]*\\d[\\d.]*;\\s*([^;)]+)/);
+        const segment = segMatch ? segMatch[1].trim() : '';
+
+        // 3. Detect manufacturer
+        const uaLower = ua.toLowerCase();
+        const brandMap = [
+          { brand: 'Samsung', tests: ['samsung', 'sm-', 'gt-', 'galaxy', 'samsungbrowser'] },
+          { brand: 'Xiaomi', tests: ['xiaomi', 'redmi', 'poco', 'miui'] },
+          { brand: 'Motorola', tests: ['motorola', 'moto ', 'moto_', 'lenovo'] },
+          { brand: 'OnePlus', tests: ['oneplus'] },
+          { brand: 'Huawei', tests: ['huawei', 'honor'] },
+          { brand: 'Google', tests: ['pixel'] },
+          { brand: 'Realme', tests: ['realme'] },
+          { brand: 'Nothing', tests: ['nothing'] },
+          { brand: 'OPPO', tests: ['oppo'] },
+          { brand: 'Vivo', tests: ['vivo'] },
+          { brand: 'LG', tests: ['lg[;\\s/]'] },
+          { brand: 'TCL', tests: ['tcl'] },
+          { brand: 'Infinix', tests: ['infinix'] },
+          { brand: 'Tecno', tests: ['tecno'] },
+          { brand: 'ZTE', tests: ['zte'] },
+          { brand: 'Alcatel', tests: ['alcatel'] },
+          { brand: 'Nokia', tests: ['nokia'] },
+          { brand: 'Sony', tests: ['sony', 'xperia'] },
+        ];
+        for (const { brand, tests } of brandMap) {
+          if (tests.some(t => uaLower.includes(t))) { info.manufacturer = brand; break; }
         }
-        const modelMatch = ua.match(/;\\s*([^;)]+)\\s*Build/);
-        if (modelMatch) info.model = modelMatch[1].trim();
+
+        // 4. Resolve model name
+        if (segment && !segment.match(/^\\d/)) {
+          // Segment looks like a model code (SM-G991B) or a name (Moto G82)
+          info.model = segment;
+        } else if (buildId) {
+          info.model = buildId;
+        }
+
+        // 5. Samsung model name mapping (best-effort)
+        if (info.manufacturer === 'Samsung' && info.model) {
+          const prefix = info.model.toUpperCase().split(/[\\/\\s]/)[0];
+          // Just use the raw model code, it's descriptive enough
+        }
+
       } else if (ua.includes('Windows')) {
         info.os = 'Windows';
         const match = ua.match(/Windows NT (\\d+\\.\\d+)/);
         const versions = { '10.0': '10/11', '6.3': '8.1', '6.2': '8', '6.1': '7' };
         info.osVersion = versions[match?.[1]] || match?.[1] || '';
-        info.manufacturer = 'PC (Browser)';
-        info.model = 'Desktop';
+        info.manufacturer = 'Desktop';
+        info.model = 'PC';
+      } else if (ua.includes('Mac OS X')) {
+        info.os = 'macOS';
+        const match = ua.match(/Mac OS X (\\d+[._]\\d+[._]?\\d*)/);
+        info.osVersion = match ? match[1].replace(/_/g, '.') : '';
+        info.manufacturer = 'Apple';
+        info.model = 'Mac';
       } else {
-        info.os = 'Unknown';
-        info.manufacturer = 'Unknown';
-        info.model = 'Unknown';
+        info.os = 'Outro';
+        info.manufacturer = 'Desconhecido';
+        info.model = 'Desconhecido';
       }
 
       return info;
@@ -219,17 +272,12 @@ export async function GET(request: NextRequest) {
       document.getElementById('f-os').value = info.os;
       document.getElementById('f-osVersion').value = info.osVersion;
 
-      document.getElementById('detected-manufacturer').textContent = 'Fabricante: ' + (info.manufacturer || 'Não detectado');
-      document.getElementById('detected-model').textContent = 'Modelo: ' + (info.model || 'Não detectado');
-      document.getElementById('detected-os').textContent = 'SO: ' + info.os + ' ' + info.osVersion;
-
       if ('getBattery' in navigator) {
         try {
           const battery = await navigator.getBattery();
           const updateBattery = () => {
             const pct = Math.round(battery.level * 100);
             const color = pct <= 20 ? '#f87171' : pct <= 50 ? '#fbbf24' : '#4ade80';
-            document.getElementById('detected-os').textContent += ' | Bateria: ' + pct + '%';
           };
           battery.addEventListener('levelchange', updateBattery);
           updateBattery();

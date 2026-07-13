@@ -28,7 +28,8 @@ export async function middleware(request: NextRequest) {
   const authCookie = request.cookies.get('pc-portfolio-auth');
 
   if (request.nextUrl.pathname.startsWith('/api/agent') ||
-      request.nextUrl.pathname.startsWith('/api/auth')) {
+      request.nextUrl.pathname.startsWith('/api/auth') ||
+      (request.nextUrl.pathname === '/api/devices' && request.method === 'POST')) {
     return NextResponse.next();
   }
 
