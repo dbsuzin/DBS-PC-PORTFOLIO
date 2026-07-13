@@ -88,7 +88,7 @@ export default function LoginModal({ onLoginSuccess }: LoginModalProps) {
         </form>
 
         <p className="mt-6 text-[10px] text-zinc-500">
-          Senha padrão: <span className="font-mono">admin123</span> (mude no .env)
+          Defina a senha em <span className="font-mono">APP_PASSWORD</span> no .env
         </p>
       </div>
     </div>

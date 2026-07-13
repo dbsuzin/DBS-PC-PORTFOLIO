@@ -1,12 +1,16 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { 
   Plus, Building2, Monitor, Copy, Trash2, Edit2, RefreshCw, 
-  X, FileSpreadsheet, HelpCircle 
+  X, FileSpreadsheet, HelpCircle, LogOut, LayoutDashboard, History,
+  Shield
 } from 'lucide-react';
 import { toast } from 'sonner';
 import LoginModal from './components/LoginModal';
+import Dashboard from './components/Dashboard';
+import StatusDot from './components/StatusDot';
+import HistoryModal from './components/HistoryModal';
 
 interface Computer {
   id: string;
@@ -28,6 +32,10 @@ interface Computer {
   macAddress?: string;
   biosVersion?: string;
   notes?: string;
+  purchaseDate?: string;
+  warrantyExpiry?: string;
+  assetTag?: string;
+  status?: string;
   lastSeen: string;
 }
 
@@ -50,15 +58,35 @@ export default function PCPortfolio() {
   const [showCompanyModal, setShowCompanyModal] = useState(false);
   const [showComputerModal, setShowComputerModal] = useState(false);
   const [showHelpModal, setShowHelpModal] = useState(false);
+  const [showDashboard, setShowDashboard] = useState(true);
+  const [historyComputer, setHistoryComputer] = useState<Computer | null>(null);
   const [editingCompany, setEditingCompany] = useState<Company | null>(null);
   const [editingComputer, setEditingComputer] = useState<Computer | null>(null);
   const [formData, setFormData] = useState({ name: '', contact: '' });
   const [computerForm, setComputerForm] = useState<any>({});
   const [searchTerm, setSearchTerm] = useState('');
+  const [autoRefresh, setAutoRefresh] = useState(true);
+  const refreshIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     fetchCompanies();
   }, []);
+
+  useEffect(() => {
+    if (autoRefresh && selectedCompany && isAuthenticated) {
+      refreshIntervalRef.current = setInterval(() => {
+        fetchComputers(selectedCompany.id);
+      }, 30000);
+    }
+    return () => {
+      if (refreshIntervalRef.current) clearInterval(refreshIntervalRef.current);
+    };
+  }, [autoRefresh, selectedCompany, isAuthenticated]);
+
+  const handleLogout = async () => {
+    await fetch('/api/auth/login', { method: 'DELETE' });
+    window.location.reload();
+  };
 
   const fetchCompanies = async () => {
     try {
@@ -91,6 +119,7 @@ export default function PCPortfolio() {
 
   const selectCompany = (company: Company) => {
     setSelectedCompany(company);
+    setShowDashboard(false);
     setSearchTerm('');
     fetchComputers(company.id);
   };
@@ -202,6 +231,7 @@ export default function PCPortfolio() {
         cpu: '', cpuCores: '', ramGB: '', diskGB: '', gpu: '',
         os: '', osVersion: '', osInstallDate: '', lastBootTime: '',
         ipAddress: '', macAddress: '', biosVersion: '', notes: '',
+        purchaseDate: '', warrantyExpiry: '', assetTag: '', status: 'active',
       });
     }
     setShowComputerModal(true);
@@ -290,14 +320,19 @@ export default function PCPortfolio() {
 
   const formatGB = (gb?: number) => gb ? `${gb.toFixed(1)} GB` : '—';
 
-  const hasLowDisk = (disks?: string) => {
-    if (!disks) return false;
-    const matches = disks.match(/(\d+)GB livre/g);
-    if (!matches) return false;
-    return matches.some(m => {
-      const gb = parseInt(m);
-      return gb <= 10;
-    });
+  const renderDisks = (disks?: string, diskGB?: number) => {
+    if (!disks) return formatGB(diskGB);
+    const parts = disks.split(' + ');
+    return parts.map((part, i) => {
+      const freeMatch = part.match(/(\d+)GB livre/);
+      if (freeMatch) {
+        const freeGB = parseInt(freeMatch[1]);
+        if (freeGB <= 20) {
+          return <span key={i} className="text-red-400 font-semibold">{part}</span>;
+        }
+      }
+      return <span key={i}>{part}</span>;
+    }).reduce((prev, curr, i) => i === 0 ? [curr] : [...prev, ' + ', curr], [] as React.ReactNode[]);
   };
 
   const filteredComputers = computers.filter(c =>
@@ -325,6 +360,14 @@ export default function PCPortfolio() {
 
           <div className="flex items-center gap-2">
             <button 
+              onClick={() => { setShowDashboard(true); setSelectedCompany(null); }}
+              className={`btn flex items-center gap-1.5 text-sm ${showDashboard ? 'btn-primary' : 'btn-secondary'}`}
+            >
+              <LayoutDashboard className="h-4 w-4" />
+              Dashboard
+            </button>
+
+            <button 
               onClick={() => openCompanyModal()}
               className="btn btn-primary flex items-center gap-1.5 text-sm"
             >
@@ -332,12 +375,29 @@ export default function PCPortfolio() {
               Nova Empresa
             </button>
 
+            {selectedCompany && (
+              <button 
+                onClick={() => setAutoRefresh(!autoRefresh)}
+                className={`btn text-xs px-2 py-1.5 ${autoRefresh ? 'btn-primary' : 'btn-secondary'}`}
+                title={autoRefresh ? 'Auto-refresh ON' : 'Auto-refresh OFF'}
+              >
+                <RefreshCw className={`h-3.5 w-3.5 ${autoRefresh ? 'animate-spin' : ''}`} />
+              </button>
+            )}
+
             <button 
               onClick={() => setShowHelpModal(true)}
               className="btn btn-secondary flex items-center gap-1.5 text-sm"
             >
               <HelpCircle className="h-4 w-4" />
               Ajuda
+            </button>
+
+            <button 
+              onClick={handleLogout}
+              className="btn btn-secondary flex items-center gap-1.5 text-sm"
+            >
+              <LogOut className="h-4 w-4" />
             </button>
           </div>
         </div>
@@ -408,7 +468,9 @@ export default function PCPortfolio() {
 
         {/* Main */}
         <div className="flex-1 flex flex-col">
-          {!selectedCompany ? (
+          {showDashboard ? (
+            <Dashboard />
+          ) : !selectedCompany ? (
             <div className="flex flex-1 items-center justify-center p-12 text-center tech-grid">
               <div>
                 <div className="mx-auto mb-6 h-16 w-16 flex items-center justify-center rounded-2xl bg-zinc-900/80 border border-sky-500/10 shadow-lg shadow-sky-500/5">
@@ -479,14 +541,13 @@ export default function PCPortfolio() {
                     <table className="w-full text-[10px]">
                       <thead>
                         <tr className="text-left">
+                          <th className="px-2 py-1.5 font-medium text-zinc-400"></th>
                           <th className="px-2 py-1.5 font-medium text-zinc-400">Hostname</th>
                           <th className="px-2 py-1.5 font-medium text-zinc-400">Fabricante/Modelo</th>
                           <th className="px-2 py-1.5 font-medium text-zinc-400">CPU</th>
                           <th className="px-2 py-1.5 font-medium text-zinc-400">RAM</th>
                           <th className="px-2 py-1.5 font-medium text-zinc-400">Disco (Físico)</th>
                           <th className="px-2 py-1.5 font-medium text-zinc-400">SO / Versão</th>
-                          <th className="px-2 py-1.5 font-medium text-zinc-400">Inst. SO</th>
-                          <th className="px-2 py-1.5 font-medium text-zinc-400">Últ. Boot</th>
                           <th className="px-2 py-1.5 font-medium text-zinc-400">IP</th>
                           <th className="px-2 py-1.5 font-medium text-zinc-400">Observações</th>
                           <th className="px-2 py-1.5 font-medium text-zinc-400">Atualizado</th>
@@ -496,6 +557,7 @@ export default function PCPortfolio() {
                       <tbody>
                         {filteredComputers.map((comp) => (
                           <tr key={comp.id} className="computer-row hover:bg-zinc-900/70 border-t border-zinc-800">
+                            <td className="px-2 py-1"><StatusDot lastSeen={comp.lastSeen} /></td>
                             <td className="px-2 py-1 font-medium whitespace-nowrap">{comp.hostname}</td>
                             <td className="px-2 py-1 whitespace-nowrap text-zinc-300">
                               {comp.manufacturer ? `${comp.manufacturer} / ${comp.model || ''}` : '—'}
@@ -504,19 +566,18 @@ export default function PCPortfolio() {
                               {comp.cpu ? (comp.cpuCores ? `${comp.cpu} (${comp.cpuCores})` : comp.cpu) : '—'}
                             </td>
                             <td className="px-2 py-1 whitespace-nowrap">{formatGB(comp.ramGB)}</td>
-                            <td className={`px-2 py-1 whitespace-nowrap text-[9px] ${hasLowDisk(comp.disks) ? 'text-red-400 font-semibold' : ''}`}>
-                              {comp.disks ? comp.disks : formatGB(comp.diskGB)}
+                            <td className="px-2 py-1 whitespace-nowrap text-[9px]">
+                              {renderDisks(comp.disks, comp.diskGB)}
                             </td>
                             <td className="px-2 py-1 whitespace-nowrap text-zinc-300">
                               {comp.os ? `${comp.os} ${comp.osVersion || ''}`.trim() : '—'}
                             </td>
-                            <td className="px-2 py-1 whitespace-nowrap text-[9px]">{formatDateOnly(comp.osInstallDate)}</td>
-                            <td className="px-2 py-1 whitespace-nowrap text-[9px]">{formatDate(comp.lastBootTime)}</td>
                             <td className="px-2 py-1 font-mono text-[9px] text-zinc-400 whitespace-nowrap">{comp.ipAddress || '—'}</td>
                             <td className="px-2 py-1 text-[9px] text-zinc-400 max-w-[200px] truncate" title={comp.notes || ''}>{comp.notes || '—'}</td>
                             <td className="px-2 py-1 text-[9px] text-zinc-400 whitespace-nowrap">{formatDate(comp.lastSeen)}</td>
                             <td className="px-2 py-1 text-right">
                               <div className="flex gap-0.5 justify-end">
+                                <button onClick={() => setHistoryComputer(comp)} className="p-1 text-sky-400 hover:text-sky-300 hover:bg-sky-500/10 rounded" title="Histórico"><History className="h-3 w-3" /></button>
                                 <button onClick={() => openComputerModal(comp)} className="p-1 text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800 rounded"><Edit2 className="h-3 w-3" /></button>
                                 <button onClick={() => deleteComputer(comp)} className="p-1 text-red-400 hover:text-red-300 hover:bg-zinc-800 rounded"><Trash2 className="h-3 w-3" /></button>
                               </div>
@@ -570,6 +631,7 @@ export default function PCPortfolio() {
                 { key: 'manufacturer', label: 'Fabricante' },
                 { key: 'model', label: 'Modelo' },
                 { key: 'serialNumber', label: 'Número de Série' },
+                { key: 'assetTag', label: 'Tag do Ativo' },
                 { key: 'cpu', label: 'Processador' },
                 { key: 'cpuCores', label: 'Núcleos CPU', type: 'number' },
                 { key: 'ramGB', label: 'RAM (GB)', type: 'number' },
@@ -582,6 +644,8 @@ export default function PCPortfolio() {
                 { key: 'ipAddress', label: 'IP' },
                 { key: 'macAddress', label: 'MAC Address' },
                 { key: 'biosVersion', label: 'Versão BIOS' },
+                { key: 'purchaseDate', label: 'Data de Compra', type: 'date' },
+                { key: 'warrantyExpiry', label: 'Vencimento Garantia', type: 'date' },
               ].map((field) => (
                 <div key={field.key}>
                   <label className="block text-xs text-zinc-400 mb-1">{field.label}</label>
@@ -593,6 +657,20 @@ export default function PCPortfolio() {
                   />
                 </div>
               ))}
+
+              <div>
+                <label className="block text-xs text-zinc-400 mb-1">Status</label>
+                <select
+                  value={computerForm.status || 'active'}
+                  onChange={(e) => setComputerForm({ ...computerForm, status: e.target.value })}
+                  className="w-full"
+                >
+                  <option value="active">Ativo</option>
+                  <option value="decommissioned">Descomissionado</option>
+                  <option value="repair">Em manutenção</option>
+                  <option value="storage">Em estoque</option>
+                </select>
+              </div>
 
               <div className="md:col-span-2">
                 <label className="block text-xs text-zinc-400 mb-1">Observações</label>
@@ -708,6 +786,14 @@ Start-ScheduledTask -TaskName "PCPortfolio_Agent"`}</pre>
             </div>
           </div>
         </div>
+      )}
+
+      {historyComputer && (
+        <HistoryModal
+          computerId={historyComputer.id}
+          hostname={historyComputer.hostname}
+          onClose={() => setHistoryComputer(null)}
+        />
       )}
     </div>
   );

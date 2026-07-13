@@ -1,10 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
+import crypto from 'crypto';
 
-// ✅ Password fallback: always allows "admin123" if no APP_PASSWORD is set
-// This makes local testing easy (just use admin123)
 const APP_PASSWORD = process.env.APP_PASSWORD || 'admin123';
+const AUTH_SECRET = process.env.AUTH_SECRET || process.env.APP_PASSWORD || 'pc-portfolio-secret-change-me';
 
-console.log('🔐 [Auth] Using password:', APP_PASSWORD === 'admin123' ? 'admin123 (default)' : 'custom from env');
+function createToken(): string {
+  const payload = Buffer.from(JSON.stringify({ ts: Date.now(), r: Math.random() })).toString('base64url');
+  const signature = crypto.createHmac('sha256', AUTH_SECRET).update(payload).digest('hex');
+  return `${payload}.${signature}`;
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -14,31 +18,30 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Senha é obrigatória' }, { status: 400 });
     }
 
-    if (password === APP_PASSWORD) {
-      // Simple token (in production use JWT or proper session)
-      const token = Buffer.from(`auth-${Date.now()}-${Math.random()}`).toString('base64');
-
-      const response = NextResponse.json({ success: true, message: 'Login realizado' });
-      
-      // Set cookie (7 days)
-      response.cookies.set('pc-portfolio-auth', token, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'lax',
-        maxAge: 60 * 60 * 24 * 7,
-        path: '/',
-      });
-
-      return response;
+    if (password !== APP_PASSWORD) {
+      return NextResponse.json({ error: 'Senha incorreta' }, { status: 401 });
     }
 
-    return NextResponse.json({ error: 'Senha incorreta' }, { status: 401 });
+    const token = createToken();
+
+    const response = NextResponse.json({ success: true, message: 'Login realizado' });
+
+    response.cookies.set('pc-portfolio-auth', token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 60 * 60 * 24 * 7,
+      path: '/',
+    });
+
+    return response;
   } catch (error) {
     return NextResponse.json({ error: 'Erro no login' }, { status: 500 });
   }
 }
 
-export async function GET() {
-  // Check if already logged in
-  return NextResponse.json({ authenticated: false });
+export async function DELETE() {
+  const response = NextResponse.json({ success: true });
+  response.cookies.set('pc-portfolio-auth', '', { maxAge: 0, path: '/' });
+  return response;
 }

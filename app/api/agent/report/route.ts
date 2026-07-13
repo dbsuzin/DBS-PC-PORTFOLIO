@@ -1,9 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { rateLimit, getClientIp } from '@/lib/rateLimit';
 
 // This endpoint is used by the PowerShell agent
 export async function POST(request: NextRequest) {
   try {
+    const ip = getClientIp(request);
+    const { allowed } = rateLimit(`agent:${ip}`, 30, 60000);
+    if (!allowed) {
+      return NextResponse.json({ error: 'Rate limit exceeded' }, { status: 429 });
+    }
+
     const body = await request.json();
     
     const { apiKey, ...computerData } = body;
@@ -97,16 +104,39 @@ export async function POST(request: NextRequest) {
 
     let computer;
 
+    const TRACKED_FIELDS = ['manufacturer', 'model', 'serialNumber', 'cpu', 'cpuCores', 'ramGB', 'diskGB', 'gpu', 'os', 'osVersion', 'ipAddress', 'macAddress', 'biosVersion', 'disks'];
+
     if (allMatches.length > 0) {
-      // Use the most recently seen one as the "main" record
       const target = allMatches[0];
-      
+      const existing = await prisma.computer.findUnique({ where: { id: target.id } });
+
       computer = await prisma.computer.update({
         where: { id: target.id },
         data: updateData
       });
 
-      // Delete any duplicate records (keep only the one we just updated)
+      if (existing) {
+        const historyEntries: { computerId: string; field: string; oldValue: string | null; newValue: string | null; changedBy: string }[] = [];
+        for (const field of TRACKED_FIELDS) {
+          const oldVal = existing[field as keyof typeof existing];
+          const newVal = updateData[field as keyof typeof updateData];
+          const oldStr = oldVal != null ? String(oldVal) : null;
+          const newStr = newVal != null ? String(newVal) : null;
+          if (oldStr !== newStr) {
+            historyEntries.push({
+              computerId: target.id,
+              field,
+              oldValue: oldStr,
+              newValue: newStr,
+              changedBy: 'agent',
+            });
+          }
+        }
+        if (historyEntries.length > 0) {
+          await prisma.computerHistory.createMany({ data: historyEntries });
+        }
+      }
+
       if (allMatches.length > 1) {
         const idsToDelete = allMatches.slice(1).map(m => m.id);
         await prisma.computer.deleteMany({
@@ -115,7 +145,6 @@ export async function POST(request: NextRequest) {
         console.log(`[AGENT] Cleaned up ${idsToDelete.length} duplicate(s) for ${hostname}`);
       }
     } else {
-      // No existing record → create fresh
       computer = await prisma.computer.create({
         data: {
           companyId: company.id,

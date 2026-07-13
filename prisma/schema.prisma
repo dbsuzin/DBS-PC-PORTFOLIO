@@ -30,7 +30,7 @@ model Computer {
   cpuCores      Int?
   ramGB         Float?
   diskGB        Float?
-  disks         String?   // breakdown ex: "C: 500GB + D: 1000GB"
+  disks         String?
   gpu           String?
   os            String?
   osVersion     String?
@@ -41,9 +41,27 @@ model Computer {
   biosVersion   String?
   notes         String?
 
+  purchaseDate     DateTime?
+  warrantyExpiry   DateTime?
+  assetTag         String?
+  status           String?    @default("active")
+
   lastSeen      DateTime  @default(now())
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
+  history ComputerHistory[]
+
   @@unique([companyId, hostname])
+}
+
+model ComputerHistory {
+  id          String   @id @default(cuid())
+  computerId  String
+  computer    Computer @relation(fields: [computerId], references: [id], onDelete: Cascade)
+  field       String
+  oldValue    String?
+  newValue    String?
+  changedBy   String?
+  createdAt   DateTime @default(now())
 }
