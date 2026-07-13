@@ -272,16 +272,25 @@ export async function GET(request: NextRequest) {
       document.getElementById('f-os').value = info.os;
       document.getElementById('f-osVersion').value = info.osVersion;
 
-      if ('getBattery' in navigator) {
+      // Auto-detect storage via Storage Manager API
+      if ('storage' in navigator && 'estimate' in navigator.storage) {
         try {
-          const battery = await navigator.getBattery();
-          const updateBattery = () => {
-            const pct = Math.round(battery.level * 100);
-            const color = pct <= 20 ? '#f87171' : pct <= 50 ? '#fbbf24' : '#4ade80';
-          };
-          battery.addEventListener('levelchange', updateBattery);
-          updateBattery();
+          const est = await navigator.storage.estimate();
+          const totalGB = Math.round(est.quota / (1024 * 1024 * 1024));
+          if (totalGB > 0) {
+            document.getElementById('f-storageGB').value = totalGB;
+            document.getElementById('f-storageGB').placeholder = totalGB + ' GB (detectado)';
+          }
         } catch(e) {}
+      }
+
+      // Auto-detect RAM via Device Memory API
+      if ('deviceMemory' in navigator) {
+        const ram = navigator.deviceMemory;
+        if (ram && ram > 0) {
+          document.getElementById('f-ramGB').value = ram;
+          document.getElementById('f-ramGB').placeholder = ram + ' GB (detectado)';
+        }
       }
 
       document.getElementById('detecting').style.display = 'none';
