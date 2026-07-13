@@ -1,21 +1,30 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
-import crypto from 'crypto';
 
 const AUTH_SECRET = process.env.AUTH_SECRET || process.env.APP_PASSWORD || 'pc-portfolio-secret-change-me';
 
-function verifyToken(token: string): boolean {
+async function verifyToken(token: string): Promise<boolean> {
   try {
     const [payload, signature] = token.split('.');
     if (!payload || !signature) return false;
-    const expectedSig = crypto.createHmac('sha256', AUTH_SECRET).update(payload).digest('hex');
-    return crypto.timingSafeEqual(Buffer.from(signature, 'hex'), Buffer.from(expectedSig, 'hex'));
+
+    const key = await crypto.subtle.importKey(
+      'raw',
+      new TextEncoder().encode(AUTH_SECRET),
+      { name: 'HMAC', hash: 'SHA-256' },
+      false,
+      ['verify']
+    );
+
+    const data = new TextEncoder().encode(payload);
+    const sigBytes = Uint8Array.from(signature.match(/.{1,2}/g)!.map(byte => parseInt(byte, 16)));
+    return await crypto.subtle.verify('HMAC', key, sigBytes, data);
   } catch {
     return false;
   }
 }
 
-export function middleware(request: NextRequest) {
+export async function middleware(request: NextRequest) {
   const authCookie = request.cookies.get('pc-portfolio-auth');
 
   if (request.nextUrl.pathname.startsWith('/api/agent') ||
@@ -23,13 +32,9 @@ export function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  if (request.nextUrl.pathname.startsWith('/api')) {
-    if (!authCookie || !verifyToken(authCookie.value)) {
-      return NextResponse.json({ error: 'Não autenticado' }, { status: 401 });
-    }
-  }
+  const isValid = authCookie ? await verifyToken(authCookie.value) : false;
 
-  if (!authCookie || !verifyToken(authCookie.value)) {
+  if (!isValid) {
     if (request.nextUrl.pathname.startsWith('/api')) {
       return NextResponse.json({ error: 'Não autenticado' }, { status: 401 });
     }
