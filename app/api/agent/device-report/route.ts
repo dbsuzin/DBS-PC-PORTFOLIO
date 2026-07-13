@@ -100,23 +100,23 @@ export async function GET(request: NextRequest) {
         <input type="text" id="f-name" required placeholder="Ex: iPhone 15 do João">
       </div>
 
-      <div class="section-title">Detectado Automaticamente</div>
+      <div class="section-title">Informações do Aparelho</div>
 
       <div class="field">
-        <label>Fabricante <span class="auto-tag">auto</span></label>
-        <input type="text" id="f-manufacturer" placeholder="Ex: Samsung">
+        <label>Fabricante</label>
+        <input type="text" id="f-manufacturer" placeholder="Ex: Samsung, Apple, Motorola">
       </div>
       <div class="field">
-        <label>Modelo <span class="auto-tag">auto</span></label>
-        <input type="text" id="f-model" placeholder="Ex: Galaxy S23">
+        <label>Modelo</label>
+        <input type="text" id="f-model" placeholder="Ex: Galaxy S23, iPhone 15">
       </div>
       <div class="field">
-        <label>Sistema Operacional <span class="auto-tag">auto</span></label>
-        <input type="text" id="f-os" placeholder="Ex: Android">
+        <label>Sistema Operacional</label>
+        <input type="text" id="f-os" placeholder="Ex: Android, iOS">
       </div>
       <div class="field">
-        <label>Versão do SO <span class="auto-tag">auto</span></label>
-        <input type="text" id="f-osVersion" placeholder="Ex: 14">
+        <label>Versão do SO</label>
+        <input type="text" id="f-osVersion" placeholder="Ex: 14, 17.5">
       </div>
 
       <div class="section-title">Informações Adicionais</div>
@@ -267,31 +267,8 @@ export async function GET(request: NextRequest) {
       const ua = navigator.userAgent;
       const info = parseUserAgent(ua);
 
-      document.getElementById('f-manufacturer').value = info.manufacturer;
-      document.getElementById('f-model').value = info.model;
       document.getElementById('f-os').value = info.os;
       document.getElementById('f-osVersion').value = info.osVersion;
-
-      // Auto-detect storage via Storage Manager API
-      if ('storage' in navigator && 'estimate' in navigator.storage) {
-        try {
-          const est = await navigator.storage.estimate();
-          const totalGB = Math.round(est.quota / (1024 * 1024 * 1024));
-          if (totalGB > 0) {
-            document.getElementById('f-storageGB').value = totalGB;
-            document.getElementById('f-storageGB').placeholder = totalGB + ' GB (detectado)';
-          }
-        } catch(e) {}
-      }
-
-      // Auto-detect RAM via Device Memory API
-      if ('deviceMemory' in navigator) {
-        const ram = navigator.deviceMemory;
-        if (ram && ram > 0) {
-          document.getElementById('f-ramGB').value = ram;
-          document.getElementById('f-ramGB').placeholder = ram + ' GB (detectado)';
-        }
-      }
 
       document.getElementById('detecting').style.display = 'none';
       document.getElementById('device-form').style.display = 'block';
