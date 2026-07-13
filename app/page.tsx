@@ -316,7 +316,7 @@ export default function PCPortfolio() {
       <header className="border-b border-zinc-800 bg-zinc-950/95 backdrop-blur sticky top-0 z-50 w-full">
         <div className="w-full px-4 py-0 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <img src="/dbs-logo.png" alt="DBS" className="h-16 w-auto" />
+            <img src="/dbs-logo.png" alt="DBS" className="h-24 w-auto" />
             <div>
               <h1 className="font-semibold text-sm tracking-tight">PC Portfolio</h1>
             </div>
