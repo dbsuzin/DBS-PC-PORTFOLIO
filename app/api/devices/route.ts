@@ -11,13 +11,20 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { companyId, ...deviceData } = body;
+    const { companyId, apiKey, ...deviceData } = body;
 
-    if (!companyId) {
-      return NextResponse.json({ error: 'companyId é obrigatório' }, { status: 400 });
+    let resolvedCompanyId = companyId;
+
+    if (!resolvedCompanyId && apiKey) {
+      const company = await prisma.company.findUnique({ where: { apiKey } });
+      if (company) resolvedCompanyId = company.id;
     }
 
-    const company = await prisma.company.findUnique({ where: { id: companyId } });
+    if (!resolvedCompanyId) {
+      return NextResponse.json({ error: 'companyId ou apiKey é obrigatório' }, { status: 400 });
+    }
+
+    const company = await prisma.company.findUnique({ where: { id: resolvedCompanyId } });
     if (!company) {
       return NextResponse.json({ error: 'Empresa não encontrada' }, { status: 404 });
     }
@@ -33,7 +40,7 @@ export async function POST(request: NextRequest) {
 
     const device = await prisma.device.create({
       data: {
-        companyId,
+        companyId: resolvedCompanyId,
         name: deviceData.name.trim(),
         manufacturer: deviceData.manufacturer || null,
         model: deviceData.model || null,

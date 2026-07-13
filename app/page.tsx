@@ -95,6 +95,7 @@ export default function PCPortfolio() {
   const [showDeviceModal, setShowDeviceModal] = useState(false);
   const [editingDevice, setEditingDevice] = useState<Device | null>(null);
   const [deviceForm, setDeviceForm] = useState<any>({});
+  const [showQRModal, setShowQRModal] = useState(false);
 
   useEffect(() => {
     fetchCompanies();
@@ -693,9 +694,14 @@ export default function PCPortfolio() {
                 />
                 <div className="text-xs text-zinc-500">{activeTab === 'computers' ? `${filteredComputers.length} / ${computers.length}` : `${filteredDevices.length} / ${devices.length}`}</div>
                 {activeTab === 'devices' && (
-                  <button onClick={() => openDeviceModal()} className="btn btn-primary flex items-center gap-2 text-sm">
-                    <Plus className="h-4 w-4" /> Adicionar Aparelho
-                  </button>
+                  <>
+                    <button onClick={() => setShowQRModal(true)} className="btn btn-secondary flex items-center gap-2 text-sm">
+                      <Smartphone className="h-4 w-4" /> QR Code
+                    </button>
+                    <button onClick={() => openDeviceModal()} className="btn btn-primary flex items-center gap-2 text-sm">
+                      <Plus className="h-4 w-4" /> Adicionar Aparelho
+                    </button>
+                  </>
                 )}
               </div>
 
@@ -998,6 +1004,39 @@ export default function PCPortfolio() {
               <button onClick={() => setShowDeviceModal(false)} className="btn btn-secondary flex-1">Cancelar</button>
               <button onClick={saveDevice} className="btn btn-primary flex-1">{editingDevice ? 'Salvar' : 'Adicionar'}</button>
             </div>
+           </div>
+        </div>
+      )}
+
+      {showQRModal && selectedCompany && (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-[100] p-6" onClick={() => setShowQRModal(false)}>
+          <div className="modal card w-full max-w-md p-6 shadow-2xl shadow-black/50 text-center" onClick={e => e.stopPropagation()}>
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-xl font-semibold">Reportar Aparelho</h3>
+              <button onClick={() => setShowQRModal(false)}><X className="h-5 w-5" /></button>
+            </div>
+            <p className="text-sm text-zinc-400 mb-4">Escaneie o QR Code com o celular para reportar automaticamente</p>
+            <div className="bg-white p-4 rounded-xl inline-block mb-4">
+              <img
+                src={`https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(
+                  (typeof window !== 'undefined' ? window.location.origin : '') + '/api/agent/device-report?key=' + selectedCompany.apiKey + '&company=' + encodeURIComponent(selectedCompany.name)
+                )}`}
+                alt="QR Code"
+                width={250}
+                height={250}
+              />
+            </div>
+            <div className="bg-zinc-950/80 border border-zinc-800 rounded-lg p-3 mb-4">
+              <p className="text-[10px] text-zinc-500 mb-1">Link direto:</p>
+              <p className="text-xs text-sky-400 font-mono break-all leading-relaxed">
+                {(typeof window !== 'undefined' ? window.location.origin : '')}/api/agent/device-report?key={selectedCompany.apiKey}&company={encodeURIComponent(selectedCompany.name)}
+              </p>
+            </div>
+            <button onClick={() => {
+              const url = (typeof window !== 'undefined' ? window.location.origin : '') + '/api/agent/device-report?key=' + selectedCompany.apiKey + '&company=' + encodeURIComponent(selectedCompany.name);
+              navigator.clipboard.writeText(url);
+              toast.success('Link copiado!');
+            }} className="btn btn-primary w-full">Copiar Link</button>
           </div>
         </div>
       )}
