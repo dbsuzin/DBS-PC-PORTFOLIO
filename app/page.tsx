@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { 
   Plus, Building2, Monitor, Copy, Trash2, Edit2, RefreshCw, 
-  Download, Key, X, FileSpreadsheet 
+  Download, Key, X, FileSpreadsheet, HelpCircle 
 } from 'lucide-react';
 import { toast } from 'sonner';
 import LoginModal from './components/LoginModal';
@@ -50,6 +50,7 @@ export default function PCPortfolio() {
   const [showCompanyModal, setShowCompanyModal] = useState(false);
   const [showComputerModal, setShowComputerModal] = useState(false);
   const [showAgentModal, setShowAgentModal] = useState(false);
+  const [showHelpModal, setShowHelpModal] = useState(false);
   const [editingCompany, setEditingCompany] = useState<Company | null>(null);
   const [editingComputer, setEditingComputer] = useState<Computer | null>(null);
   const [formData, setFormData] = useState({ name: '', contact: '' });
@@ -338,6 +339,14 @@ export default function PCPortfolio() {
               <Plus className="h-4 w-4" />
               Nova Empresa
             </button>
+
+            <button 
+              onClick={() => setShowHelpModal(true)}
+              className="btn btn-secondary flex items-center gap-1.5 text-sm"
+            >
+              <HelpCircle className="h-4 w-4" />
+              ?
+            </button>
           </div>
         </div>
       </header>
@@ -607,7 +616,7 @@ export default function PCPortfolio() {
         </div>
       )}
 
-      {showAgentModal && selectedCompany && (
+      {showAgentModal && (
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-[100] p-6" onClick={() => setShowAgentModal(false)}>
           <div className="modal card w-full max-w-3xl p-7 overflow-auto max-h-[92vh]" onClick={e => e.stopPropagation()}>
             <h3 className="text-2xl font-semibold mb-1">Agente para Computadores</h3>
@@ -616,8 +625,14 @@ export default function PCPortfolio() {
             <div className="bg-zinc-950 border border-zinc-800 p-4 rounded-xl mb-5">
               <div className="text-xs text-zinc-400">API Key desta empresa</div>
               <div className="flex items-center gap-2 mt-1">
-                <div className="api-key flex-1 text-sm font-mono">{selectedCompany.apiKey}</div>
-                <button onClick={() => copyToClipboard(selectedCompany.apiKey, "API Key")} className="btn btn-secondary text-xs px-3 py-1.5">Copiar</button>
+                {selectedCompany ? (
+                  <>
+                    <div className="api-key flex-1 text-sm font-mono">{selectedCompany.apiKey}</div>
+                    <button onClick={() => copyToClipboard(selectedCompany.apiKey, "API Key")} className="btn btn-secondary text-xs px-3 py-1.5">Copiar</button>
+                  </>
+                ) : (
+                  <div className="text-sm text-zinc-500">Selecione uma empresa na barra lateral para ver a API Key.</div>
+                )}
               </div>
             </div>
 
@@ -625,9 +640,9 @@ export default function PCPortfolio() {
               <div>
                 <div className="font-semibold mb-1 flex items-center gap-2">🪟 PowerShell (Windows)</div>
                 <div className="bg-black p-4 rounded-xl font-mono text-xs overflow-auto border border-zinc-800">
-                  <pre>{`$apiKey = "${selectedCompany.apiKey}"
+                  <pre>{selectedCompany ? `$apiKey = "${selectedCompany.apiKey}"
 # Baixe o script em: /scripts/agent.ps1
-.\\\\agent.ps1 -ApiKey $apiKey -Url "https://dbs-pc-portfolio.vercel.app/api/agent/report"`}</pre>
+.\\\\agent.ps1 -ApiKey $apiKey -Url "https://dbs-pc-portfolio.vercel.app/api/agent/report"` : `# Selecione uma empresa primeiro para ver o comando com a API Key correta.`}</pre>
                 </div>
               </div>
 
@@ -644,6 +659,109 @@ export default function PCPortfolio() {
 
             <div className="mt-6 text-right">
               <button onClick={() => setShowAgentModal(false)} className="btn btn-secondary">Fechar</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showHelpModal && (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-[100] p-6" onClick={() => setShowHelpModal(false)}>
+          <div className="modal card w-full max-w-3xl p-7 overflow-auto max-h-[92vh]" onClick={e => e.stopPropagation()}>
+            <div className="flex justify-between items-center mb-5">
+              <h3 className="text-xl font-semibold">Ajuda & Instruções</h3>
+              <button onClick={() => setShowHelpModal(false)}><X className="h-5 w-5" /></button>
+            </div>
+
+            <div className="space-y-6 text-sm">
+              <div>
+                <h4 className="font-semibold mb-2 text-zinc-200">1. Instalar o Agente (PowerShell)</h4>
+                <p className="text-zinc-400 mb-2">Copie e cole o comando abaixo no PC que deseja cadastrar:</p>
+                <div className="bg-black p-4 rounded-xl font-mono text-xs overflow-auto border border-zinc-800 relative group">
+                  <pre className="pr-16">{`$apiKey = "${selectedCompany?.apiKey || 'SUA_API_KEY_AQUI'}"
+$scriptUrl = "https://dbs-pc-portfolio.vercel.app/scripts/agent.ps1"
+
+Invoke-Expression (Invoke-WebRequest -Uri $scriptUrl -UseBasicParsing).Content -ApiKey $apiKey`}</pre>
+                  <button
+                    onClick={() => copyToClipboard(
+                      `$apiKey = "${selectedCompany?.apiKey || 'SUA_API_KEY_AQUI'}"\n$scriptUrl = "https://dbs-pc-portfolio.vercel.app/scripts/agent.ps1"\n\nInvoke-Expression (Invoke-WebRequest -Uri $scriptUrl -UseBasicParsing).Content -ApiKey $apiKey`,
+                      "Comando"
+                    )}
+                    className="absolute top-2 right-2 p-1.5 rounded bg-zinc-800 text-zinc-400 hover:text-white opacity-0 group-hover:opacity-100 transition"
+                  >
+                    <Copy className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+              </div>
+
+              <div>
+                <h4 className="font-semibold mb-2 text-zinc-200">2. Executar do arquivo local</h4>
+                <p className="text-zinc-400 mb-2">Se já baixou o script para o PC:</p>
+                <div className="bg-black p-4 rounded-xl font-mono text-xs overflow-auto border border-zinc-800">
+                  <pre>{`powershell -ExecutionPolicy Bypass -File "C:\\Script_dbs\\scripts\\agent.ps1" -ApiKey "${selectedCompany?.apiKey || 'SUA_API_KEY_AQUI'}"`}</pre>
+                </div>
+              </div>
+
+              <div>
+                <h4 className="font-semibold mb-2 text-zinc-200">3. Gerar instalador .exe (PS2EXE)</h4>
+                <p className="text-zinc-400 mb-2">No servidor, para gerar um .exe do agente:</p>
+                <div className="bg-black p-4 rounded-xl font-mono text-xs overflow-auto border border-zinc-800">
+                  <pre>{`# Instalar PS2EXE
+Install-Module -Name ps2exe -Force -Scope CurrentUser
+
+# Gerar .exe
+Invoke-PS2EXE -InputFile "agent.ps1" -OutputFile "agent.exe" -Force
+
+# Usar o .exe
+.\\agent.exe -ApiKey "${selectedCompany?.apiKey || 'SUA_API_KEY_AQUI'}"`}</pre>
+                </div>
+              </div>
+
+              <div>
+                <h4 className="font-semibold mb-2 text-zinc-200">4. Executar na inicialização do Windows</h4>
+                <p className="text-zinc-400 mb-2">Criar tarefa agendada para o agente rodar toda vez que o PC ligar:</p>
+                <div className="bg-black p-4 rounded-xl font-mono text-xs overflow-auto border border-zinc-800">
+                  <pre>{`$taskName = "PCPortfolio_Agent"
+
+$action = New-ScheduledTaskAction -Execute "powershell.exe" `
+    -Argument "-ExecutionPolicy Bypass -WindowStyle Hidden -File \\"C:\\Script_dbs\\scripts\\agent.ps1\\" -ApiKey \\"${selectedCompany?.apiKey || 'SUA_API_KEY_AQUI'}\\""
+
+$trigger = New-ScheduledTaskTrigger -AtStartup
+$settings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -StartWhenAvailable -RunOnlyIfNetworkAvailable
+
+Register-ScheduledTask -TaskName $taskName -Action $action -Trigger $trigger -Settings $settings -Description "DBS PC Portfolio Agent" -RunLevel Highest`}</pre>
+                </div>
+                <p className="text-zinc-500 text-xs mt-2">Para remover: <span className="font-mono">Unregister-ScheduledTask -TaskName "PCPortfolio_Agent"</span></p>
+              </div>
+
+              <div>
+                <h4 className="font-semibold mb-2 text-zinc-200">5. .exe com API Key embutida (distribuição)</h4>
+                <p className="text-zinc-400 mb-2">Crie uma versão do script com a API Key fixa antes de gerar o .exe:</p>
+                <div className="bg-black p-4 rounded-xl font-mono text-xs overflow-auto border border-zinc-800">
+                  <pre>{`# Substituir a API Key no script
+(Get-Content "agent.ps1") -replace '\\$ApiKey = .*', '$ApiKey = "${selectedCompany?.apiKey || 'SUA_API_KEY_AQUI'}"' | Set-Content "agent-fixed.ps1"
+
+# Gerar .exe
+Invoke-PS2EXE -InputFile "agent-fixed.ps1" -OutputFile "agent.exe" -Force`}</pre>
+                </div>
+              </div>
+
+              <div>
+                <h4 className="font-semibold mb-2 text-zinc-200">6. Verificar tarefa agendada</h4>
+                <div className="bg-black p-4 rounded-xl font-mono text-xs overflow-auto border border-zinc-800">
+                  <pre>{`# Listar a tarefa
+Get-ScheduledTask -TaskName "PCPortfolio_Agent"
+
+# Ver status
+Get-ScheduledTaskInfo -TaskName "PCPortfolio_Agent"
+
+# Executar manualmente
+Start-ScheduledTask -TaskName "PCPortfolio_Agent"`}</pre>
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-6 pt-4 border-t border-zinc-800 text-right">
+              <button onClick={() => setShowHelpModal(false)} className="btn btn-secondary">Fechar</button>
             </div>
           </div>
         </div>
