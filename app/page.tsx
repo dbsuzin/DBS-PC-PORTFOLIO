@@ -292,6 +292,13 @@ export default function PCPortfolio() {
 
   const formatGB = (gb?: number) => gb ? `${gb.toFixed(1)} GB` : '—';
 
+  const hasLowDisk = (disks?: string) => {
+    if (!disks) return false;
+    const matches = disks.match(/(\d+)%/g);
+    if (!matches) return false;
+    return matches.some(m => parseInt(m) <= 10);
+  };
+
   const filteredComputers = computers.filter(c =>
     c.hostname.toLowerCase().includes(searchTerm.toLowerCase()) ||
     (c.manufacturer && c.manufacturer.toLowerCase().includes(searchTerm.toLowerCase())) ||
@@ -496,7 +503,7 @@ export default function PCPortfolio() {
                               {comp.cpu ? (comp.cpuCores ? `${comp.cpu} (${comp.cpuCores})` : comp.cpu) : '—'}
                             </td>
                             <td className="px-2 py-1 whitespace-nowrap">{formatGB(comp.ramGB)}</td>
-                            <td className="px-2 py-1 whitespace-nowrap text-[9px]">
+                            <td className={`px-2 py-1 whitespace-nowrap text-[9px] ${hasLowDisk(comp.disks) ? 'text-red-400 font-semibold' : ''}`}>
                               {comp.disks ? comp.disks : formatGB(comp.diskGB)}
                             </td>
                             <td className="px-2 py-1 whitespace-nowrap text-zinc-300">
