@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { 
   Plus, Building2, Monitor, Copy, Trash2, Edit2, RefreshCw, 
-  Download, Key, X, FileSpreadsheet, HelpCircle 
+  X, FileSpreadsheet, HelpCircle 
 } from 'lucide-react';
 import { toast } from 'sonner';
 import LoginModal from './components/LoginModal';
@@ -49,7 +49,6 @@ export default function PCPortfolio() {
   const [isLoading, setIsLoading] = useState(true);
   const [showCompanyModal, setShowCompanyModal] = useState(false);
   const [showComputerModal, setShowComputerModal] = useState(false);
-  const [showAgentModal, setShowAgentModal] = useState(false);
   const [showHelpModal, setShowHelpModal] = useState(false);
   const [editingCompany, setEditingCompany] = useState<Company | null>(null);
   const [editingComputer, setEditingComputer] = useState<Computer | null>(null);
@@ -265,8 +264,6 @@ export default function PCPortfolio() {
     toast.success(`${label} copiado!`);
   };
 
-  const openAgentModal = () => setShowAgentModal(true);
-
   const formatDate = (dateString?: string | Date) => {
     if (!dateString) return '—';
     try {
@@ -295,9 +292,12 @@ export default function PCPortfolio() {
 
   const hasLowDisk = (disks?: string) => {
     if (!disks) return false;
-    const matches = disks.match(/(\d+)%/g);
+    const matches = disks.match(/(\d+)GB livre/g);
     if (!matches) return false;
-    return matches.some(m => parseInt(m) <= 10);
+    return matches.some(m => {
+      const gb = parseInt(m);
+      return gb <= 10;
+    });
   };
 
   const filteredComputers = computers.filter(c =>
@@ -325,14 +325,6 @@ export default function PCPortfolio() {
 
           <div className="flex items-center gap-2">
             <button 
-              onClick={openAgentModal}
-              className="btn btn-secondary flex items-center gap-1.5 text-sm"
-            >
-              <Download className="h-4 w-4" />
-              Agente
-            </button>
-            
-            <button 
               onClick={() => openCompanyModal()}
               className="btn btn-primary flex items-center gap-1.5 text-sm"
             >
@@ -345,7 +337,7 @@ export default function PCPortfolio() {
               className="btn btn-secondary flex items-center gap-1.5 text-sm"
             >
               <HelpCircle className="h-4 w-4" />
-              ?
+              Ajuda
             </button>
           </div>
         </div>
@@ -611,54 +603,6 @@ export default function PCPortfolio() {
             <div className="flex gap-3 mt-7 pt-4 border-t border-zinc-800">
               <button onClick={() => setShowComputerModal(false)} className="btn btn-secondary flex-1">Cancelar</button>
               <button onClick={saveComputer} className="btn btn-primary flex-1">{editingComputer ? 'Salvar' : 'Adicionar'}</button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {showAgentModal && (
-        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-[100] p-6" onClick={() => setShowAgentModal(false)}>
-          <div className="modal card w-full max-w-3xl p-7 overflow-auto max-h-[92vh] shadow-2xl shadow-black/50" onClick={e => e.stopPropagation()}>
-            <h3 className="text-2xl font-semibold mb-1 glow-text">Agente para Computadores</h3>
-            <p className="text-zinc-400 mb-5">Instale o script em cada PC. Ele reporta automaticamente.</p>
-
-                <div className="bg-zinc-950/90 border border-zinc-800/50 p-4 rounded-xl mb-5">
-                  <div className="text-xs text-zinc-400">API Key desta empresa</div>
-              <div className="flex items-center gap-2 mt-1">
-                {selectedCompany ? (
-                  <>
-                    <div className="api-key flex-1 text-sm font-mono">{selectedCompany.apiKey}</div>
-                    <button onClick={() => copyToClipboard(selectedCompany.apiKey, "API Key")} className="btn btn-secondary text-xs px-3 py-1.5">Copiar</button>
-                  </>
-                ) : (
-                  <div className="text-sm text-zinc-500">Selecione uma empresa na barra lateral para ver a API Key.</div>
-                )}
-              </div>
-            </div>
-
-            <div className="space-y-6 text-sm">
-              <div>
-                <div className="font-semibold mb-1 flex items-center gap-2">🪟 PowerShell (Windows)</div>
-                <div className="bg-zinc-950/90 p-4 rounded-xl font-mono text-xs overflow-auto border border-sky-500/10 text-sky-300">
-                  <pre>{selectedCompany ? `$apiKey = "${selectedCompany.apiKey}"
-# Baixe o script em: /scripts/agent.ps1
-.\\\\agent.ps1 -ApiKey $apiKey -Url "https://dbs-pc-portfolio.vercel.app/api/agent/report"` : `# Selecione uma empresa primeiro para ver o comando com a API Key correta.`}</pre>
-                </div>
-              </div>
-
-              <div className="text-xs bg-sky-500/5 border border-sky-500/15 p-3 rounded-lg text-sky-200">
-                <strong>Dica:</strong> Agende o script para rodar diariamente (Task Scheduler no Windows).
-              </div>
-
-              <div className="text-xs bg-sky-500/5 border border-sky-500/15 p-3 rounded-lg text-sky-200">
-                <strong>HDs físicos:</strong> O agente agora mostra <strong>apenas discos físicos</strong> (SSD/HD reais).<br />
-                Exclui automaticamente Google Drive, OneDrive, drives virtuais, USB, rede e volumes pequenos.<br />
-                Formato: <span className="font-mono">C: 477GB (45% livre) + D: 931GB (72% livre)</span>
-              </div>
-            </div>
-
-            <div className="mt-6 text-right">
-              <button onClick={() => setShowAgentModal(false)} className="btn btn-secondary">Fechar</button>
             </div>
           </div>
         </div>

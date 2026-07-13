@@ -97,8 +97,8 @@ try {
                     
                     $totalSize += $d.Size
                     
-                    # Formato desejado: "C: 477GB (45% livre)"
-                    $diskList += "$($d.DeviceID) ${sizeGB}GB (${freePct}% livre)"
+                    # Formato desejado: "C: 477GB (214GB livre)"
+                    $diskList += "$($d.DeviceID) ${sizeGB}GB (${freeGB}GB livre)"
                 }
             }
         } catch {}
@@ -113,12 +113,9 @@ try {
             if ($volName -match '(?i)Google|OneDrive|Dropbox|Box|Virtual|RAM') { continue }
             
             $sizeGB = [math]::Round($d.Size / 1GB, 0)
-            $freePct = 0
-            if ($d.Size -gt 0) {
-                $freePct = [math]::Round( ($d.FreeSpace / $d.Size) * 100 )
-            }
+            $freeGB = [math]::Round($d.FreeSpace / 1GB, 0)
             $totalSize += $d.Size
-            $diskList += "$($d.DeviceID) ${sizeGB}GB (${freePct}% livre)"
+            $diskList += "$($d.DeviceID) ${sizeGB}GB (${freeGB}GB livre)"
         }
     }
     
