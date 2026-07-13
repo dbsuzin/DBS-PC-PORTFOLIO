@@ -722,8 +722,7 @@ Invoke-PS2EXE -InputFile "agent.ps1" -OutputFile "agent.exe" -Force
                 <div className="bg-black p-4 rounded-xl font-mono text-xs overflow-auto border border-zinc-800">
                   <pre>{`$taskName = "PCPortfolio_Agent"
 
-$action = New-ScheduledTaskAction -Execute "powershell.exe" `
-    -Argument "-ExecutionPolicy Bypass -WindowStyle Hidden -File \\"C:\\Script_dbs\\scripts\\agent.ps1\\" -ApiKey \\"${selectedCompany?.apiKey || 'SUA_API_KEY_AQUI'}\\""
+$action = New-ScheduledTaskAction -Execute "powershell.exe" -Argument "-ExecutionPolicy Bypass -WindowStyle Hidden -File \\"C:\\Script_dbs\\scripts\\agent.ps1\\" -ApiKey \\"${selectedCompany?.apiKey || 'SUA_API_KEY_AQUI'}\\""
 
 $trigger = New-ScheduledTaskTrigger -AtStartup
 $settings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -StartWhenAvailable -RunOnlyIfNetworkAvailable
