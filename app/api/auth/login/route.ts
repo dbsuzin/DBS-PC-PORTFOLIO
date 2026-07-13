@@ -1,12 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server';
-import crypto from 'crypto';
 
 const APP_PASSWORD = process.env.APP_PASSWORD || 'admin123';
 const AUTH_SECRET = process.env.AUTH_SECRET || process.env.APP_PASSWORD || 'pc-portfolio-secret-change-me';
 
-function createToken(): string {
-  const payload = Buffer.from(JSON.stringify({ ts: Date.now(), r: Math.random() })).toString('base64url');
-  const signature = crypto.createHmac('sha256', AUTH_SECRET).update(payload).digest('hex');
+async function createToken(): Promise<string> {
+  const payload = btoa(JSON.stringify({ ts: Date.now(), r: Math.random() }));
+
+  const key = await crypto.subtle.importKey(
+    'raw',
+    new TextEncoder().encode(AUTH_SECRET),
+    { name: 'HMAC', hash: 'SHA-256' },
+    false,
+    ['sign']
+  );
+
+  const sig = await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(payload));
+  const signature = Array.from(new Uint8Array(sig)).map(b => b.toString(16).padStart(2, '0')).join('');
+
   return `${payload}.${signature}`;
 }
 
@@ -22,7 +32,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Senha incorreta' }, { status: 401 });
     }
 
-    const token = createToken();
+    const token = await createToken();
 
     const response = NextResponse.json({ success: true, message: 'Login realizado' });
 
