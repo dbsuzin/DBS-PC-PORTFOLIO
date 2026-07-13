@@ -480,6 +480,7 @@ export default function PCPortfolio() {
                           <th className="px-2 py-1.5 font-medium text-zinc-400">Inst. SO</th>
                           <th className="px-2 py-1.5 font-medium text-zinc-400">Últ. Boot</th>
                           <th className="px-2 py-1.5 font-medium text-zinc-400">IP</th>
+                          <th className="px-2 py-1.5 font-medium text-zinc-400">Observações</th>
                           <th className="px-2 py-1.5 font-medium text-zinc-400">Atualizado</th>
                           <th className="px-2 py-1.5 font-medium text-right text-zinc-400">Ações</th>
                         </tr>
@@ -504,6 +505,7 @@ export default function PCPortfolio() {
                             <td className="px-2 py-1 whitespace-nowrap text-[9px]">{formatDateOnly(comp.osInstallDate)}</td>
                             <td className="px-2 py-1 whitespace-nowrap text-[9px]">{formatDate(comp.lastBootTime)}</td>
                             <td className="px-2 py-1 font-mono text-[9px] text-zinc-400 whitespace-nowrap">{comp.ipAddress || '—'}</td>
+                            <td className="px-2 py-1 text-[9px] text-zinc-400 max-w-[200px] truncate" title={comp.notes || ''}>{comp.notes || '—'}</td>
                             <td className="px-2 py-1 text-[9px] text-zinc-400 whitespace-nowrap">{formatDate(comp.lastSeen)}</td>
                             <td className="px-2 py-1 text-right">
                               <div className="flex gap-0.5 justify-end">
