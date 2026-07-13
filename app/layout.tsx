@@ -20,9 +20,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="pt-BR" className="h-full antialiased">
-      <body className="min-h-full flex flex-col bg-zinc-950 text-zinc-100 font-sans">
+        <body className="min-h-full flex flex-col bg-[#06080f] text-zinc-100 font-sans">
         {children}
-        <Toaster position="top-right" richColors closeButton />
+        <Toaster position="top-right" richColors closeButton toastOptions={{ style: { background: 'rgba(15, 18, 30, 0.95)', backdropFilter: 'blur(20px)', border: '1px solid rgba(56, 189, 248, 0.15)', color: '#e4e4e7' } }} />
       </body>
     </html>
   );

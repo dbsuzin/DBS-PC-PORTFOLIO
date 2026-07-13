@@ -314,7 +314,7 @@ export default function PCPortfolio() {
   return (
     <div className="min-h-screen flex flex-col w-full">
       {/* Header - ONLY as tall as the logo */}
-      <header className="border-b border-zinc-800 bg-zinc-950/95 backdrop-blur sticky top-0 z-50 w-full">
+      <header className="border-b border-zinc-800/50 bg-zinc-950/80 backdrop-blur-xl sticky top-0 z-50 w-full header-line">
         <div className="w-full px-4 py-0 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <img src="/dbs-logo.png" alt="DBS" className="h-24 w-auto" />
@@ -353,7 +353,7 @@ export default function PCPortfolio() {
 
       <div className="flex flex-1 w-full min-w-0">
         {/* Sidebar - wider for readable company names */}
-        <div className="w-52 border-r border-zinc-800 p-2 flex flex-col">
+        <div className="w-52 border-r border-zinc-800/50 p-2 flex flex-col sidebar-glow bg-zinc-950/50 backdrop-blur-sm">
           <div className="flex items-center justify-between mb-2">
             <div>
               <h2 className="font-medium text-sm uppercase tracking-widest text-zinc-500">Empresas</h2>
@@ -374,15 +374,15 @@ export default function PCPortfolio() {
                 <div
                   key={company.id}
                   onClick={() => selectCompany(company)}
-                  className={`group flex items-center justify-between rounded-lg px-2 py-2 cursor-pointer transition-all border text-sm ${
+                  className={`group flex items-center justify-between rounded-xl px-2 py-2 cursor-pointer transition-all border text-sm ${
                     selectedCompany?.id === company.id 
-                      ? 'bg-zinc-900 border-zinc-700' 
-                      : 'hover:bg-zinc-900/60 border-transparent hover:border-zinc-800'
+                      ? 'bg-sky-500/10 border-sky-500/20 shadow-lg shadow-sky-500/5' 
+                      : 'hover:bg-zinc-900/60 border-transparent hover:border-zinc-800/50'
                   }`}
                 >
                   <div className="flex items-center gap-2 min-w-0">
-                    <div className="h-6 w-6 rounded bg-zinc-800 flex items-center justify-center flex-shrink-0">
-                      <Building2 className="h-3.5 w-3.5 text-zinc-400" />
+                    <div className="h-6 w-6 rounded-lg bg-sky-500/10 flex items-center justify-center flex-shrink-0 border border-sky-500/15">
+                      <Building2 className="h-3.5 w-3.5 text-sky-400" />
                     </div>
                     <div className="min-w-0">
                       <div className="font-medium truncate">{company.name}</div>
@@ -417,12 +417,12 @@ export default function PCPortfolio() {
         {/* Main */}
         <div className="flex-1 flex flex-col">
           {!selectedCompany ? (
-            <div className="flex flex-1 items-center justify-center p-12 text-center">
+            <div className="flex flex-1 items-center justify-center p-12 text-center tech-grid">
               <div>
-                <div className="mx-auto mb-6 h-16 w-16 flex items-center justify-center rounded-2xl bg-zinc-900">
-                  <Monitor className="h-8 w-8 text-zinc-400" />
+                <div className="mx-auto mb-6 h-16 w-16 flex items-center justify-center rounded-2xl bg-zinc-900/80 border border-sky-500/10 shadow-lg shadow-sky-500/5">
+                  <Monitor className="h-8 w-8 text-sky-400" />
                 </div>
-                <h3 className="font-semibold text-2xl mb-2">Selecione uma empresa</h3>
+                <h3 className="font-semibold text-2xl mb-2 glow-text">Selecione uma empresa</h3>
                 <p className="text-zinc-400 max-w-xs mx-auto text-sm">Escolha uma empresa na barra lateral.</p>
                 <button onClick={() => openCompanyModal()} className="mt-6 btn btn-primary mx-auto">Cadastrar primeira empresa</button>
               </div>
@@ -430,11 +430,11 @@ export default function PCPortfolio() {
           ) : (
             <>
               {/* Header */}
-              <div className="border-b border-zinc-800 px-3 py-2 flex items-center justify-between">
+              <div className="border-b border-zinc-800/50 px-3 py-2 flex items-center justify-between bg-zinc-950/30">
                 <div>
                   <div className="flex items-center gap-3">
-                    <h2 className="text-3xl font-semibold tracking-tight">{selectedCompany.name}</h2>
-                    <span className="text-xs px-3 py-1 rounded-full bg-zinc-800 text-zinc-400">{computers.length} computadores</span>
+                    <h2 className="text-3xl font-semibold tracking-tight glow-text">{selectedCompany.name}</h2>
+                    <span className="text-xs px-3 py-1 rounded-full bg-sky-500/10 border border-sky-500/20 text-sky-400">{computers.length} computadores</span>
                   </div>
                   {selectedCompany.contact && <p className="text-sm text-zinc-400 mt-0.5">{selectedCompany.contact}</p>}
                 </div>
@@ -453,9 +453,9 @@ export default function PCPortfolio() {
               </div>
 
               {/* API Key */}
-              <div className="bg-zinc-900 border-b border-zinc-800 px-8 py-1.5 flex items-center justify-between text-sm">
+              <div className="bg-zinc-900/50 border-b border-zinc-800/50 px-8 py-1.5 flex items-center justify-between text-sm backdrop-blur-sm">
                 <div className="flex items-center gap-3">
-                  <div className="font-mono bg-zinc-950 px-3 py-1.5 rounded text-xs border border-zinc-800">{selectedCompany.apiKey}</div>
+                  <div className="font-mono bg-zinc-950/80 px-3 py-1.5 rounded-lg text-xs border border-sky-500/15 text-sky-300">{selectedCompany.apiKey}</div>
                   <button onClick={() => copyToClipboard(selectedCompany.apiKey, "API Key")} className="text-xs flex items-center gap-1.5 text-blue-400 hover:text-blue-300">
                     <Copy className="h-3.5 w-3.5" /> Copiar
                   </button>
@@ -477,13 +477,13 @@ export default function PCPortfolio() {
               {/* Table */}
               <div className="px-2 pb-4 flex-1 overflow-x-auto w-full">
                 {computers.length === 0 ? (
-                  <div className="py-16 text-center border border-dashed border-zinc-800 rounded-2xl">
-                    <Monitor className="mx-auto mb-4 h-10 w-10 text-zinc-600" />
+                  <div className="py-16 text-center border border-dashed border-zinc-800/50 rounded-2xl tech-grid">
+                    <Monitor className="mx-auto mb-4 h-10 w-10 text-sky-500/40" />
                     <p className="text-lg text-zinc-400">Nenhum computador cadastrado.</p>
                     <button onClick={() => openComputerModal()} className="mt-4 btn btn-primary">Adicionar PC</button>
                   </div>
                 ) : (
-                  <div className="card overflow-hidden">
+                  <div className="card overflow-hidden animate-border-glow">
                     <table className="w-full text-[10px]">
                       <thead>
                         <tr className="text-left">
@@ -544,7 +544,7 @@ export default function PCPortfolio() {
       {/* Modals */}
       {showCompanyModal && (
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-[100] p-6" onClick={() => setShowCompanyModal(false)}>
-          <div className="modal card w-full max-w-md p-6" onClick={e => e.stopPropagation()}>
+          <div className="modal card w-full max-w-md p-6 shadow-2xl shadow-black/50" onClick={e => e.stopPropagation()}>
             <h3 className="text-xl font-semibold mb-1">{editingCompany ? 'Editar Empresa' : 'Nova Empresa'}</h3>
             <div className="space-y-4 mt-5">
               <div>
@@ -566,7 +566,7 @@ export default function PCPortfolio() {
 
       {showComputerModal && (
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-[100] p-6" onClick={() => setShowComputerModal(false)}>
-          <div className="modal card w-full max-w-2xl max-h-[92vh] overflow-auto p-6" onClick={e => e.stopPropagation()}>
+          <div className="modal card w-full max-w-2xl max-h-[92vh] overflow-auto p-6 shadow-2xl shadow-black/50" onClick={e => e.stopPropagation()}>
             <div className="flex justify-between items-center mb-5">
               <h3 className="text-xl font-semibold">{editingComputer ? 'Editar Computador' : 'Adicionar Computador'}</h3>
               <button onClick={() => setShowComputerModal(false)}><X className="h-5 w-5" /></button>
@@ -618,12 +618,12 @@ export default function PCPortfolio() {
 
       {showAgentModal && (
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-[100] p-6" onClick={() => setShowAgentModal(false)}>
-          <div className="modal card w-full max-w-3xl p-7 overflow-auto max-h-[92vh]" onClick={e => e.stopPropagation()}>
-            <h3 className="text-2xl font-semibold mb-1">Agente para Computadores</h3>
+          <div className="modal card w-full max-w-3xl p-7 overflow-auto max-h-[92vh] shadow-2xl shadow-black/50" onClick={e => e.stopPropagation()}>
+            <h3 className="text-2xl font-semibold mb-1 glow-text">Agente para Computadores</h3>
             <p className="text-zinc-400 mb-5">Instale o script em cada PC. Ele reporta automaticamente.</p>
 
-            <div className="bg-zinc-950 border border-zinc-800 p-4 rounded-xl mb-5">
-              <div className="text-xs text-zinc-400">API Key desta empresa</div>
+                <div className="bg-zinc-950/90 border border-zinc-800/50 p-4 rounded-xl mb-5">
+                  <div className="text-xs text-zinc-400">API Key desta empresa</div>
               <div className="flex items-center gap-2 mt-1">
                 {selectedCompany ? (
                   <>
@@ -639,18 +639,18 @@ export default function PCPortfolio() {
             <div className="space-y-6 text-sm">
               <div>
                 <div className="font-semibold mb-1 flex items-center gap-2">🪟 PowerShell (Windows)</div>
-                <div className="bg-black p-4 rounded-xl font-mono text-xs overflow-auto border border-zinc-800">
+                <div className="bg-zinc-950/90 p-4 rounded-xl font-mono text-xs overflow-auto border border-sky-500/10 text-sky-300">
                   <pre>{selectedCompany ? `$apiKey = "${selectedCompany.apiKey}"
 # Baixe o script em: /scripts/agent.ps1
 .\\\\agent.ps1 -ApiKey $apiKey -Url "https://dbs-pc-portfolio.vercel.app/api/agent/report"` : `# Selecione uma empresa primeiro para ver o comando com a API Key correta.`}</pre>
                 </div>
               </div>
 
-              <div className="text-xs bg-zinc-900 border border-zinc-800 p-3 rounded">
+              <div className="text-xs bg-sky-500/5 border border-sky-500/15 p-3 rounded-lg text-sky-200">
                 <strong>Dica:</strong> Agende o script para rodar diariamente (Task Scheduler no Windows).
               </div>
 
-              <div className="text-xs bg-zinc-900 border border-zinc-800 p-3 rounded">
+              <div className="text-xs bg-sky-500/5 border border-sky-500/15 p-3 rounded-lg text-sky-200">
                 <strong>HDs físicos:</strong> O agente agora mostra <strong>apenas discos físicos</strong> (SSD/HD reais).<br />
                 Exclui automaticamente Google Drive, OneDrive, drives virtuais, USB, rede e volumes pequenos.<br />
                 Formato: <span className="font-mono">C: 477GB (45% livre) + D: 931GB (72% livre)</span>
@@ -666,9 +666,9 @@ export default function PCPortfolio() {
 
       {showHelpModal && (
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-[100] p-6" onClick={() => setShowHelpModal(false)}>
-          <div className="modal card w-full max-w-3xl p-7 overflow-auto max-h-[92vh]" onClick={e => e.stopPropagation()}>
+          <div className="modal card w-full max-w-3xl p-7 overflow-auto max-h-[92vh] shadow-2xl shadow-black/50" onClick={e => e.stopPropagation()}>
             <div className="flex justify-between items-center mb-5">
-              <h3 className="text-xl font-semibold">Ajuda & Instruções</h3>
+              <h3 className="text-xl font-semibold glow-text">Ajuda & Instruções</h3>
               <button onClick={() => setShowHelpModal(false)}><X className="h-5 w-5" /></button>
             </div>
 
@@ -676,7 +676,7 @@ export default function PCPortfolio() {
               <div>
                 <h4 className="font-semibold mb-2 text-zinc-200">1. Instalar o Agente (PowerShell)</h4>
                 <p className="text-zinc-400 mb-2">Copie e cole o comando abaixo no PC que deseja cadastrar:</p>
-                <div className="bg-black p-4 rounded-xl font-mono text-xs overflow-auto border border-zinc-800 relative group">
+                <div className="bg-zinc-950/90 p-4 rounded-xl font-mono text-xs overflow-auto border border-sky-500/10 text-sky-300 relative group">
                   <pre className="pr-16">{`$apiKey = "${selectedCompany?.apiKey || 'SUA_API_KEY_AQUI'}"
 $scriptUrl = "https://dbs-pc-portfolio.vercel.app/scripts/agent.ps1"
 
@@ -686,7 +686,7 @@ Invoke-Expression (Invoke-WebRequest -Uri $scriptUrl -UseBasicParsing).Content -
                       `$apiKey = "${selectedCompany?.apiKey || 'SUA_API_KEY_AQUI'}"\n$scriptUrl = "https://dbs-pc-portfolio.vercel.app/scripts/agent.ps1"\n\nInvoke-Expression (Invoke-WebRequest -Uri $scriptUrl -UseBasicParsing).Content -ApiKey $apiKey`,
                       "Comando"
                     )}
-                    className="absolute top-2 right-2 p-1.5 rounded bg-zinc-800 text-zinc-400 hover:text-white opacity-0 group-hover:opacity-100 transition"
+                    className="absolute top-2 right-2 p-1.5 rounded bg-sky-500/10 border border-sky-500/20 text-sky-400 hover:text-white opacity-0 group-hover:opacity-100 transition"
                   >
                     <Copy className="h-3.5 w-3.5" />
                   </button>
@@ -696,7 +696,7 @@ Invoke-Expression (Invoke-WebRequest -Uri $scriptUrl -UseBasicParsing).Content -
               <div>
                 <h4 className="font-semibold mb-2 text-zinc-200">2. Executar do arquivo local</h4>
                 <p className="text-zinc-400 mb-2">Se já baixou o script para o PC:</p>
-                <div className="bg-black p-4 rounded-xl font-mono text-xs overflow-auto border border-zinc-800">
+                <div className="bg-zinc-950/90 p-4 rounded-xl font-mono text-xs overflow-auto border border-sky-500/10 text-sky-300">
                   <pre>{`powershell -ExecutionPolicy Bypass -File "C:\\Script_dbs\\scripts\\agent.ps1" -ApiKey "${selectedCompany?.apiKey || 'SUA_API_KEY_AQUI'}"`}</pre>
                 </div>
               </div>
@@ -704,7 +704,7 @@ Invoke-Expression (Invoke-WebRequest -Uri $scriptUrl -UseBasicParsing).Content -
               <div>
                 <h4 className="font-semibold mb-2 text-zinc-200">3. Gerar instalador .exe (PS2EXE)</h4>
                 <p className="text-zinc-400 mb-2">No servidor, para gerar um .exe do agente:</p>
-                <div className="bg-black p-4 rounded-xl font-mono text-xs overflow-auto border border-zinc-800">
+                <div className="bg-zinc-950/90 p-4 rounded-xl font-mono text-xs overflow-auto border border-sky-500/10 text-sky-300">
                   <pre>{`# Instalar PS2EXE
 Install-Module -Name ps2exe -Force -Scope CurrentUser
 
@@ -719,7 +719,7 @@ Invoke-PS2EXE -InputFile "agent.ps1" -OutputFile "agent.exe" -Force
               <div>
                 <h4 className="font-semibold mb-2 text-zinc-200">4. Executar na inicialização do Windows</h4>
                 <p className="text-zinc-400 mb-2">Criar tarefa agendada para o agente rodar toda vez que o PC ligar:</p>
-                <div className="bg-black p-4 rounded-xl font-mono text-xs overflow-auto border border-zinc-800">
+                <div className="bg-zinc-950/90 p-4 rounded-xl font-mono text-xs overflow-auto border border-sky-500/10 text-sky-300">
                   <pre>{`$taskName = "PCPortfolio_Agent"
 
 $action = New-ScheduledTaskAction -Execute "powershell.exe" -Argument "-ExecutionPolicy Bypass -WindowStyle Hidden -File \\"C:\\Script_dbs\\scripts\\agent.ps1\\" -ApiKey \\"${selectedCompany?.apiKey || 'SUA_API_KEY_AQUI'}\\""
@@ -735,7 +735,7 @@ Register-ScheduledTask -TaskName $taskName -Action $action -Trigger $trigger -Se
               <div>
                 <h4 className="font-semibold mb-2 text-zinc-200">5. .exe com API Key embutida (distribuição)</h4>
                 <p className="text-zinc-400 mb-2">Crie uma versão do script com a API Key fixa antes de gerar o .exe:</p>
-                <div className="bg-black p-4 rounded-xl font-mono text-xs overflow-auto border border-zinc-800">
+                <div className="bg-zinc-950/90 p-4 rounded-xl font-mono text-xs overflow-auto border border-sky-500/10 text-sky-300">
                   <pre>{`# Substituir a API Key no script
 (Get-Content "agent.ps1") -replace '\\$ApiKey = .*', '$ApiKey = "${selectedCompany?.apiKey || 'SUA_API_KEY_AQUI'}"' | Set-Content "agent-fixed.ps1"
 
@@ -746,7 +746,7 @@ Invoke-PS2EXE -InputFile "agent-fixed.ps1" -OutputFile "agent.exe" -Force`}</pre
 
               <div>
                 <h4 className="font-semibold mb-2 text-zinc-200">6. Verificar tarefa agendada</h4>
-                <div className="bg-black p-4 rounded-xl font-mono text-xs overflow-auto border border-zinc-800">
+                <div className="bg-zinc-950/90 p-4 rounded-xl font-mono text-xs overflow-auto border border-sky-500/10 text-sky-300">
                   <pre>{`# Listar a tarefa
 Get-ScheduledTask -TaskName "PCPortfolio_Agent"
 
