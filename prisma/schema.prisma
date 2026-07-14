@@ -34,7 +34,6 @@ model Device {
   storageGB     Float?
   ramGB         Float?
   phoneNumber   String?
-  batteryHealth Int?
   ipAddress     String?
   macAddress    String?
   notes         String?

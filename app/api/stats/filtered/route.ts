@@ -18,7 +18,6 @@ export async function GET(request: NextRequest) {
       'devicesOnline': { lastSeen: { gte: oneDayAgo } },
       'devicesStale': { lastSeen: { gte: sevenDaysAgo, lt: oneDayAgo } },
       'devicesOffline': { lastSeen: { lt: sevenDaysAgo } },
-      'lowBattery': { batteryHealth: { lte: 20, not: null } },
       'deviceWarranty': {
         warrantyExpiry: {
           gte: now,

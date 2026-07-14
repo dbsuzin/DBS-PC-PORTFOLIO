@@ -4,7 +4,7 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { 
   Plus, Building2, Monitor, Copy, Trash2, Edit2, RefreshCw, 
   X, FileSpreadsheet, HelpCircle, LogOut, LayoutDashboard, History,
-  Shield, Smartphone, Battery, Signal, Columns3, Check, Image
+  Shield, Smartphone, Signal, Columns3, Check, Image
 } from 'lucide-react';
 import { toast } from 'sonner';
 import LoginModal from './components/LoginModal';
@@ -47,10 +47,6 @@ function suggestDeviceHealthStatus(device: any): string {
     if (warrantyEnd < now) return 'critical';
     const threeMonths = new Date(now.getTime() + 90 * 24 * 60 * 60 * 1000);
     if (warrantyEnd < threeMonths) return 'attention';
-  }
-  if (device.batteryHealth != null) {
-    if (device.batteryHealth <= 20) return 'critical';
-    if (device.batteryHealth <= 50) return 'attention';
   }
   return 'ok';
 }
@@ -95,7 +91,6 @@ interface Device {
   storageGB?: number;
   ramGB?: number;
   phoneNumber?: string;
-  batteryHealth?: number;
   ipAddress?: string;
   macAddress?: string;
   notes?: string;
@@ -157,7 +152,7 @@ export default function PCPortfolio() {
   const [showColConfig, setShowColConfig] = useState<'computers' | 'devices' | null>(null);
 
   const defaultComputerCols = ['status','hostname','manufacturer','cpu','ram','disks','os','ip','healthStatus','notes','lastSeen','actions'];
-  const defaultDeviceCols = ['status','name','manufacturer','os','imei','storage','ram','phone','battery','devStatus','healthStatus','lastSeen','actions'];
+  const defaultDeviceCols = ['status','name','manufacturer','os','imei','storage','ram','phone','devStatus','healthStatus','lastSeen','actions'];
 
   const [visibleComputerCols, setVisibleComputerCols] = useState<string[]>(() => {
     if (typeof window !== 'undefined') {
@@ -208,7 +203,7 @@ export default function PCPortfolio() {
     defaultWidths: {
       status: 30, name: 130, manufacturer: 100, model: 100, serialNumber: 110,
       assetTag: 80, os: 80, osVersion: 80, imei: 120, storage: 80,
-      ram: 60, phone: 100, battery: 60, ip: 100, macAddress: 120,
+      ram: 60, phone: 100, ip: 100, macAddress: 120,
       purchaseDate: 90, warrantyExpiry: 90, devStatus: 90, healthStatus: 70,
       notes: 160, lastSeen: 120, actions: 70,
     },
@@ -472,7 +467,6 @@ export default function PCPortfolio() {
         storageGB: device.storageGB || '',
         ramGB: device.ramGB || '',
         phoneNumber: device.phoneNumber || '',
-        batteryHealth: device.batteryHealth || '',
         ipAddress: device.ipAddress || '',
         macAddress: device.macAddress || '',
         notes: device.notes || '',
@@ -487,7 +481,7 @@ export default function PCPortfolio() {
       setDeviceForm({
         name: '', manufacturer: '', model: '', serialNumber: '', imei: '',
         os: '', osVersion: '', storageGB: '', ramGB: '', phoneNumber: '',
-        batteryHealth: '', ipAddress: '', macAddress: '', notes: '',
+        ipAddress: '', macAddress: '', notes: '',
         purchaseDate: '', warrantyExpiry: '', assetTag: '', status: 'active',
         healthStatus: 'ok',
       });
@@ -887,7 +881,6 @@ export default function PCPortfolio() {
                             { key: 'storage', label: 'Armazenamento' },
                             { key: 'ram', label: 'RAM' },
                             { key: 'phone', label: 'Telefone' },
-                            { key: 'battery', label: 'Bateria' },
                             { key: 'ip', label: 'IP' },
                             { key: 'macAddress', label: 'MAC Address' },
                             { key: 'purchaseDate', label: 'Data Compra' },
@@ -1048,7 +1041,6 @@ export default function PCPortfolio() {
                               {visibleDeviceCols.includes('storage') && <th className="px-2 py-1.5 font-medium text-zinc-400 relative" style={deviceColWidths.getStyle('storage')}>Armazenamento <ResizeHandle onMouseDown={(e) => deviceColWidths.handleMouseDown('storage', e)} /></th>}
                               {visibleDeviceCols.includes('ram') && <th className="px-2 py-1.5 font-medium text-zinc-400 relative" style={deviceColWidths.getStyle('ram')}>RAM <ResizeHandle onMouseDown={(e) => deviceColWidths.handleMouseDown('ram', e)} /></th>}
                               {visibleDeviceCols.includes('phone') && <th className="px-2 py-1.5 font-medium text-zinc-400 relative" style={deviceColWidths.getStyle('phone')}>Telefone <ResizeHandle onMouseDown={(e) => deviceColWidths.handleMouseDown('phone', e)} /></th>}
-                              {visibleDeviceCols.includes('battery') && <th className="px-2 py-1.5 font-medium text-zinc-400 relative" style={deviceColWidths.getStyle('battery')}>Bateria <ResizeHandle onMouseDown={(e) => deviceColWidths.handleMouseDown('battery', e)} /></th>}
                               {visibleDeviceCols.includes('ip') && <th className="px-2 py-1.5 font-medium text-zinc-400 relative" style={deviceColWidths.getStyle('ip')}>IP <ResizeHandle onMouseDown={(e) => deviceColWidths.handleMouseDown('ip', e)} /></th>}
                               {visibleDeviceCols.includes('macAddress') && <th className="px-2 py-1.5 font-medium text-zinc-400 relative" style={deviceColWidths.getStyle('macAddress')}>MAC <ResizeHandle onMouseDown={(e) => deviceColWidths.handleMouseDown('macAddress', e)} /></th>}
                               {visibleDeviceCols.includes('purchaseDate') && <th className="px-2 py-1.5 font-medium text-zinc-400 relative" style={deviceColWidths.getStyle('purchaseDate')}>Data Compra <ResizeHandle onMouseDown={(e) => deviceColWidths.handleMouseDown('purchaseDate', e)} /></th>}
@@ -1075,15 +1067,6 @@ export default function PCPortfolio() {
                                 {visibleDeviceCols.includes('storage') && <td className="px-2 py-1 whitespace-nowrap" style={deviceColWidths.getStyle('storage')}>{device.storageGB ? `${device.storageGB} GB` : '—'}</td>}
                                 {visibleDeviceCols.includes('ram') && <td className="px-2 py-1 whitespace-nowrap" style={deviceColWidths.getStyle('ram')}>{device.ramGB ? `${device.ramGB} GB` : '—'}</td>}
                                 {visibleDeviceCols.includes('phone') && <td className="px-2 py-1 font-mono text-[9px] text-zinc-400 whitespace-nowrap" style={deviceColWidths.getStyle('phone')}>{device.phoneNumber || '—'}</td>}
-                                {visibleDeviceCols.includes('battery') && (
-                                  <td className="px-2 py-1 whitespace-nowrap" style={deviceColWidths.getStyle('battery')}>
-                                    {device.batteryHealth != null ? (
-                                      <span className={device.batteryHealth <= 20 ? 'text-red-400' : device.batteryHealth <= 50 ? 'text-amber-400' : 'text-zinc-300'}>
-                                        {device.batteryHealth}%
-                                      </span>
-                                    ) : '—'}
-                                  </td>
-                                )}
                                 {visibleDeviceCols.includes('ip') && <td className="px-2 py-1 font-mono text-[9px] text-zinc-400 whitespace-nowrap" style={deviceColWidths.getStyle('ip')}>{device.ipAddress || '—'}</td>}
                                 {visibleDeviceCols.includes('macAddress') && <td className="px-2 py-1 font-mono text-[9px] text-zinc-400 whitespace-nowrap" style={deviceColWidths.getStyle('macAddress')}>{device.macAddress || '—'}</td>}
                                 {visibleDeviceCols.includes('purchaseDate') && <td className="px-2 py-1 text-[9px] text-zinc-400 whitespace-nowrap" style={deviceColWidths.getStyle('purchaseDate')}>{formatDateOnly(device.purchaseDate)}</td>}
@@ -1355,7 +1338,6 @@ export default function PCPortfolio() {
                 { key: 'osVersion', label: 'Versão do SO' },
                 { key: 'storageGB', label: 'Armazenamento (GB)', type: 'number' },
                 { key: 'ramGB', label: 'RAM (GB)', type: 'number' },
-                { key: 'batteryHealth', label: 'Saúde da Bateria (%)', type: 'number' },
                 { key: 'ipAddress', label: 'IP' },
                 { key: 'macAddress', label: 'MAC Address' },
                 { key: 'assetTag', label: 'Tag do Ativo' },

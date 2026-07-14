@@ -79,8 +79,6 @@ export async function GET(request: NextRequest) {
     .spinner { width: 24px; height: 24px; border: 3px solid #27272a; border-top-color: #38bdf8; border-radius: 50%; animation: spin 0.6s linear infinite; }
     @keyframes spin { to { transform: rotate(360deg); } }
     .section-title { font-size: 11px; color: #52525b; text-transform: uppercase; letter-spacing: 1px; margin: 18px 0 10px; border-top: 1px solid #27272a; padding-top: 14px; }
-    .battery-bar { height: 4px; background: #27272a; border-radius: 2px; margin-top: 6px; overflow: hidden; }
-    .battery-fill { height: 100%; border-radius: 2px; transition: width 0.3s; }
     .detected-info { font-size: 12px; color: #71717a; margin-bottom: 4px; }
   </style>
 </head>

@@ -18,7 +18,6 @@ export async function GET() {
       devicesStaleCount,
       devicesOfflineCount,
       lowDiskCount,
-      lowBatteryCount,
       osDistribution,
       deviceOsDistribution,
       ramDistribution,
@@ -37,7 +36,6 @@ export async function GET() {
       prisma.device.count({ where: { lastSeen: { gte: sevenDaysAgo, lt: oneDayAgo } } }),
       prisma.device.count({ where: { lastSeen: { lt: sevenDaysAgo } } }),
       prisma.computer.count({ where: { disks: { contains: 'GB livre' } } }).catch(() => 0),
-      prisma.device.count({ where: { batteryHealth: { lte: 20, not: null } } }).catch(() => 0),
       prisma.computer.groupBy({
         by: ['os'],
         _count: { os: true },
@@ -98,7 +96,6 @@ export async function GET() {
       devicesStale: devicesStaleCount,
       devicesOffline: devicesOfflineCount,
       lowDisk: lowDiskCount,
-      lowBattery: lowBatteryCount,
       warrantyExpiring,
       deviceWarrantyExpiring,
       osDistribution: osDistribution.map(o => ({ os: o.os || 'Desconhecido', count: o._count.os })),

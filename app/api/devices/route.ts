@@ -51,7 +51,6 @@ export async function POST(request: NextRequest) {
         storageGB: deviceData.storageGB ? parseFloat(deviceData.storageGB) : null,
         ramGB: deviceData.ramGB ? parseFloat(deviceData.ramGB) : null,
         phoneNumber: deviceData.phoneNumber || null,
-        batteryHealth: deviceData.batteryHealth ? parseInt(deviceData.batteryHealth) : null,
         ipAddress: deviceData.ipAddress || null,
         macAddress: deviceData.macAddress || null,
         notes: deviceData.notes || null,

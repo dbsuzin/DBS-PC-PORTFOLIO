@@ -27,7 +27,6 @@ export async function PUT(
         storageGB: body.storageGB ? parseFloat(body.storageGB) : null,
         ramGB: body.ramGB ? parseFloat(body.ramGB) : null,
         phoneNumber: body.phoneNumber || null,
-        batteryHealth: body.batteryHealth ? parseInt(body.batteryHealth) : null,
         ipAddress: body.ipAddress || null,
         macAddress: body.macAddress || null,
         notes: body.notes || null,

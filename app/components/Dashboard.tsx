@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { 
   Monitor, Building2, Wifi, WifiOff, AlertTriangle, HardDrive, 
-  Clock, ChevronRight, Activity, X, ExternalLink, Smartphone, Battery
+  Clock, ChevronRight, Activity, X, ExternalLink, Smartphone
 } from 'lucide-react';
 
 interface Stats {
@@ -17,7 +17,6 @@ interface Stats {
   devicesStale: number;
   devicesOffline: number;
   lowDisk: number;
-  lowBattery: number;
   warrantyExpiring: number;
   deviceWarrantyExpiring: number;
   osDistribution: { os: string; count: number }[];
@@ -48,7 +47,6 @@ interface FilteredDevice {
   manufacturer: string | null;
   model: string | null;
   lastSeen: string;
-  batteryHealth: number | null;
   warrantyExpiry: string | null;
   ipAddress: string | null;
   company: { id: string; name: string };
@@ -73,7 +71,6 @@ const FILTER_LABELS: Record<string, { title: string; icon: any; color: string }>
   devicesOnline: { title: 'Aparelhos Online', icon: Smartphone, color: 'text-emerald-400' },
   devicesStale: { title: 'Aparelhos Stale (1-7 dias)', icon: Smartphone, color: 'text-amber-400' },
   devicesOffline: { title: 'Aparelhos Offline', icon: Smartphone, color: 'text-red-400' },
-  lowBattery: { title: 'Bateria Baixa (≤20%)', icon: Battery, color: 'text-orange-400' },
   deviceWarranty: { title: 'Garantia Aparelhos (90 dias)', icon: AlertTriangle, color: 'text-yellow-400' },
 };
 
@@ -161,7 +158,6 @@ export default function Dashboard({ onSelectCompany }: DashboardProps) {
     { label: 'Aparelhos Online', value: stats.devicesOnline, filter: 'devicesOnline', icon: Smartphone, color: 'text-emerald-400', bg: 'bg-emerald-500/10' },
     { label: 'Aparelhos Stale', value: stats.devicesStale, filter: 'devicesStale', icon: Smartphone, color: 'text-amber-400', bg: 'bg-amber-500/10' },
     { label: 'Aparelhos Offline', value: stats.devicesOffline, filter: 'devicesOffline', icon: Smartphone, color: 'text-red-400', bg: 'bg-red-500/10' },
-    { label: 'Bateria Baixa', value: stats.lowBattery, filter: 'lowBattery', icon: Battery, color: 'text-orange-400', bg: 'bg-orange-500/10' },
     { label: 'Garantia Aparelhos', value: stats.deviceWarrantyExpiring, filter: 'deviceWarranty', icon: AlertTriangle, color: 'text-yellow-400', bg: 'bg-yellow-500/10' },
   ];
 
@@ -364,9 +360,6 @@ export default function Dashboard({ onSelectCompany }: DashboardProps) {
                             {device.ipAddress && <span className="font-mono text-zinc-600 hidden md:inline">{device.ipAddress}</span>}
                           </div>
                           <div className="flex items-center gap-2 text-zinc-500 flex-shrink-0">
-                            {activeFilter === 'lowBattery' && device.batteryHealth != null && (
-                              <span className="text-orange-400/80 text-[10px]">{device.batteryHealth}%</span>
-                            )}
                             {activeFilter === 'deviceWarranty' && device.warrantyExpiry && (
                               <span className="text-yellow-400/80 text-[10px]">{new Date(device.warrantyExpiry).toLocaleDateString('pt-BR')}</span>
                             )}
