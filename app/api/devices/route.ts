@@ -59,6 +59,7 @@ export async function POST(request: NextRequest) {
         warrantyExpiry: safeDate(deviceData.warrantyExpiry),
         assetTag: deviceData.assetTag || null,
         status: deviceData.status || 'active',
+        healthStatus: deviceData.healthStatus || 'ok',
         lastSeen: new Date(),
       }
     });

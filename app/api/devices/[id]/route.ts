@@ -35,6 +35,7 @@ export async function PUT(
         warrantyExpiry: safeDate(body.warrantyExpiry),
         assetTag: body.assetTag || null,
         status: body.status || 'active',
+        healthStatus: body.healthStatus || 'ok',
         lastSeen: new Date(),
       }
     });

@@ -47,6 +47,7 @@ export async function GET(request: NextRequest) {
       'MAC': comp.macAddress || '',
       'BIOS': comp.biosVersion || '',
       'Observações': comp.notes || '',
+      'Condição': comp.healthStatus === 'critical' ? 'Crítico' : comp.healthStatus === 'attention' ? 'Atenção' : 'OK',
       'Última Atualização': new Date(comp.lastSeen).toLocaleString('pt-BR'),
       'Cadastrado em': new Date(comp.createdAt).toLocaleDateString('pt-BR'),
     }));

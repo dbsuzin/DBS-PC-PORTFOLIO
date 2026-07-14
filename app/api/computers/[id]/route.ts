@@ -4,7 +4,7 @@ import { prisma } from '@/lib/prisma';
 const TRACKED_FIELDS = [
   'hostname', 'manufacturer', 'model', 'serialNumber', 'cpu', 'cpuCores',
   'ramGB', 'diskGB', 'gpu', 'os', 'osVersion', 'ipAddress', 'macAddress',
-  'biosVersion', 'notes', 'purchaseDate', 'warrantyExpiry', 'assetTag', 'status'
+  'biosVersion', 'notes', 'purchaseDate', 'warrantyExpiry', 'assetTag', 'status', 'healthStatus'
 ];
 
 export async function PUT(
@@ -50,6 +50,7 @@ export async function PUT(
       warrantyExpiry: safeDate(body.warrantyExpiry),
       assetTag: body.assetTag || null,
       status: body.status || 'active',
+      healthStatus: body.healthStatus || 'ok',
       lastSeen: new Date(),
     };
 

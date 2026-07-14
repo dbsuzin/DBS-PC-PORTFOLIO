@@ -11,6 +11,48 @@ import LoginModal from './components/LoginModal';
 import Dashboard from './components/Dashboard';
 import StatusDot from './components/StatusDot';
 import HistoryModal from './components/HistoryModal';
+import Combobox from './components/Combobox';
+
+const COMPUTER_MANUFACTURERS = ['Dell', 'Lenovo', 'HP', 'Acer', 'Asus', 'Samsung', 'Apple', 'Microsoft', 'MSI', 'Huawei'];
+const DEVICE_MANUFACTURERS = ['Samsung', 'Apple', 'Xiaomi', 'Motorola', 'LG', 'Huawei', 'OnePlus', 'Google', 'Sony', 'Nokia'];
+const CPUS = ['Intel Core i3', 'Intel Core i5', 'Intel Core i7', 'Intel Core i9', 'AMD Ryzen 3', 'AMD Ryzen 5', 'AMD Ryzen 7', 'AMD Ryzen 9'];
+const OSS = ['Windows 10', 'Windows 11', 'Linux', 'Ubuntu', 'Debian', 'macOS', 'Chrome OS'];
+const DEVICE_OSS = ['Android', 'iOS', 'HarmonyOS', 'Windows Mobile'];
+
+function suggestHealthStatus(computer: any): string {
+  const now = new Date();
+  if (computer.warrantyExpiry) {
+    const warrantyEnd = new Date(computer.warrantyExpiry);
+    if (warrantyEnd < now) return 'critical';
+    const threeMonths = new Date(now.getTime() + 90 * 24 * 60 * 60 * 1000);
+    if (warrantyEnd < threeMonths) return 'attention';
+  }
+  if (computer.disks) {
+    const freeMatch = computer.disks.match(/(\d+)GB livre/);
+    if (freeMatch) {
+      const freeGB = parseInt(freeMatch[1]);
+      if (freeGB <= 20) return 'critical';
+      if (freeGB <= 50) return 'attention';
+    }
+  }
+  if (computer.diskGB && computer.diskGB < 50) return 'attention';
+  return 'ok';
+}
+
+function suggestDeviceHealthStatus(device: any): string {
+  const now = new Date();
+  if (device.warrantyExpiry) {
+    const warrantyEnd = new Date(device.warrantyExpiry);
+    if (warrantyEnd < now) return 'critical';
+    const threeMonths = new Date(now.getTime() + 90 * 24 * 60 * 60 * 1000);
+    if (warrantyEnd < threeMonths) return 'attention';
+  }
+  if (device.batteryHealth != null) {
+    if (device.batteryHealth <= 20) return 'critical';
+    if (device.batteryHealth <= 50) return 'attention';
+  }
+  return 'ok';
+}
 
 interface Computer {
   id: string;
@@ -36,6 +78,7 @@ interface Computer {
   warrantyExpiry?: string;
   assetTag?: string;
   status?: string;
+  healthStatus?: string;
   lastSeen: string;
 }
 
@@ -59,6 +102,7 @@ interface Device {
   warrantyExpiry?: string;
   assetTag?: string;
   status?: string;
+  healthStatus?: string;
   lastSeen: string;
 }
 
@@ -98,8 +142,8 @@ export default function PCPortfolio() {
   const [showQRModal, setShowQRModal] = useState(false);
   const [showColConfig, setShowColConfig] = useState<'computers' | 'devices' | null>(null);
 
-  const defaultComputerCols = ['status','hostname','manufacturer','cpu','ram','disks','os','ip','notes','lastSeen','actions'];
-  const defaultDeviceCols = ['status','name','manufacturer','os','imei','storage','ram','phone','battery','devStatus','lastSeen','actions'];
+  const defaultComputerCols = ['status','hostname','manufacturer','cpu','ram','disks','os','ip','healthStatus','notes','lastSeen','actions'];
+  const defaultDeviceCols = ['status','name','manufacturer','os','imei','storage','ram','phone','battery','devStatus','healthStatus','lastSeen','actions'];
 
   const [visibleComputerCols, setVisibleComputerCols] = useState<string[]>(() => {
     if (typeof window !== 'undefined') {
@@ -310,7 +354,7 @@ export default function PCPortfolio() {
   const openComputerModal = (computer?: Computer) => {
     if (computer) {
       setEditingComputer(computer);
-      setComputerForm({ ...computer });
+      setComputerForm({ ...computer, healthStatus: computer.healthStatus || suggestHealthStatus(computer) });
     } else {
       setEditingComputer(null);
       setComputerForm({
@@ -319,6 +363,7 @@ export default function PCPortfolio() {
         os: '', osVersion: '', osInstallDate: '', lastBootTime: '',
         ipAddress: '', macAddress: '', biosVersion: '', notes: '',
         purchaseDate: '', warrantyExpiry: '', assetTag: '', status: 'active',
+        healthStatus: 'ok',
       });
     }
     setShowComputerModal(true);
@@ -337,6 +382,7 @@ export default function PCPortfolio() {
         cpuCores: computerForm.cpuCores ? parseInt(computerForm.cpuCores) : null,
         ramGB: computerForm.ramGB ? parseFloat(computerForm.ramGB) : null,
         diskGB: computerForm.diskGB ? parseFloat(computerForm.diskGB) : null,
+        healthStatus: computerForm.healthStatus || 'ok',
       };
 
       let res;
@@ -398,6 +444,7 @@ export default function PCPortfolio() {
         warrantyExpiry: device.warrantyExpiry ? device.warrantyExpiry.split('T')[0] : '',
         assetTag: device.assetTag || '',
         status: device.status || 'active',
+        healthStatus: device.healthStatus || suggestDeviceHealthStatus(device),
       });
     } else {
       setEditingDevice(null);
@@ -406,6 +453,7 @@ export default function PCPortfolio() {
         os: '', osVersion: '', storageGB: '', ramGB: '', phoneNumber: '',
         batteryHealth: '', ipAddress: '', macAddress: '', notes: '',
         purchaseDate: '', warrantyExpiry: '', assetTag: '', status: 'active',
+        healthStatus: 'ok',
       });
     }
     setShowDeviceModal(true);
@@ -748,14 +796,27 @@ export default function PCPortfolio() {
                           {showColConfig === 'computers' ? (
                         <div className="space-y-1">
                           {[
-                            { key: 'status', label: 'Status' },
+                            { key: 'status', label: 'Status Conexão' },
                             { key: 'hostname', label: 'Hostname' },
-                            { key: 'manufacturer', label: 'Fabricante/Modelo' },
-                            { key: 'cpu', label: 'CPU' },
+                            { key: 'manufacturer', label: 'Fabricante' },
+                            { key: 'model', label: 'Modelo' },
+                            { key: 'serialNumber', label: 'Núm. Série' },
+                            { key: 'assetTag', label: 'Tag Ativo' },
+                            { key: 'cpu', label: 'Processador' },
+                            { key: 'cpuCores', label: 'Núcleos CPU' },
                             { key: 'ram', label: 'RAM' },
                             { key: 'disks', label: 'Disco' },
-                            { key: 'os', label: 'SO / Versão' },
+                            { key: 'gpu', label: 'GPU' },
+                            { key: 'os', label: 'SO' },
+                            { key: 'osVersion', label: 'Versão SO' },
+                            { key: 'osInstallDate', label: 'Data Instalação SO' },
+                            { key: 'lastBootTime', label: 'Última Inicialização' },
                             { key: 'ip', label: 'IP' },
+                            { key: 'macAddress', label: 'MAC Address' },
+                            { key: 'biosVersion', label: 'Versão BIOS' },
+                            { key: 'purchaseDate', label: 'Data Compra' },
+                            { key: 'warrantyExpiry', label: 'Garantia' },
+                            { key: 'healthStatus', label: 'Condição' },
                             { key: 'notes', label: 'Observações' },
                             { key: 'lastSeen', label: 'Atualizado' },
                             { key: 'actions', label: 'Ações' },
@@ -771,16 +832,26 @@ export default function PCPortfolio() {
                       ) : (
                         <div className="space-y-1">
                           {[
-                            { key: 'status', label: 'Status' },
+                            { key: 'status', label: 'Status Conexão' },
                             { key: 'name', label: 'Nome' },
-                            { key: 'manufacturer', label: 'Fabricante/Modelo' },
-                            { key: 'os', label: 'SO / Versão' },
+                            { key: 'manufacturer', label: 'Fabricante' },
+                            { key: 'model', label: 'Modelo' },
+                            { key: 'serialNumber', label: 'Núm. Série' },
+                            { key: 'assetTag', label: 'Tag Ativo' },
+                            { key: 'os', label: 'SO' },
+                            { key: 'osVersion', label: 'Versão SO' },
                             { key: 'imei', label: 'IMEI' },
                             { key: 'storage', label: 'Armazenamento' },
                             { key: 'ram', label: 'RAM' },
                             { key: 'phone', label: 'Telefone' },
                             { key: 'battery', label: 'Bateria' },
-                            { key: 'devStatus', label: 'Status Aparelho' },
+                            { key: 'ip', label: 'IP' },
+                            { key: 'macAddress', label: 'MAC Address' },
+                            { key: 'purchaseDate', label: 'Data Compra' },
+                            { key: 'warrantyExpiry', label: 'Garantia' },
+                            { key: 'devStatus', label: 'Status Ativo' },
+                            { key: 'healthStatus', label: 'Condição' },
+                            { key: 'notes', label: 'Observações' },
                             { key: 'lastSeen', label: 'Atualizado' },
                             { key: 'actions', label: 'Ações' },
                           ].map(col => (
@@ -825,12 +896,25 @@ export default function PCPortfolio() {
                             <tr className="text-left">
                               {visibleComputerCols.includes('status') && <th className="px-2 py-1.5 font-medium text-zinc-400"></th>}
                               {visibleComputerCols.includes('hostname') && <th className="px-2 py-1.5 font-medium text-zinc-400">Hostname</th>}
-                              {visibleComputerCols.includes('manufacturer') && <th className="px-2 py-1.5 font-medium text-zinc-400">Fabricante/Modelo</th>}
-                              {visibleComputerCols.includes('cpu') && <th className="px-2 py-1.5 font-medium text-zinc-400">CPU</th>}
+                              {visibleComputerCols.includes('manufacturer') && <th className="px-2 py-1.5 font-medium text-zinc-400">Fabricante</th>}
+                              {visibleComputerCols.includes('model') && <th className="px-2 py-1.5 font-medium text-zinc-400">Modelo</th>}
+                              {visibleComputerCols.includes('serialNumber') && <th className="px-2 py-1.5 font-medium text-zinc-400">Núm. Série</th>}
+                              {visibleComputerCols.includes('assetTag') && <th className="px-2 py-1.5 font-medium text-zinc-400">Tag Ativo</th>}
+                              {visibleComputerCols.includes('cpu') && <th className="px-2 py-1.5 font-medium text-zinc-400">Processador</th>}
+                              {visibleComputerCols.includes('cpuCores') && <th className="px-2 py-1.5 font-medium text-zinc-400">Núcleos</th>}
                               {visibleComputerCols.includes('ram') && <th className="px-2 py-1.5 font-medium text-zinc-400">RAM</th>}
-                              {visibleComputerCols.includes('disks') && <th className="px-2 py-1.5 font-medium text-zinc-400">Disco (Físico)</th>}
-                              {visibleComputerCols.includes('os') && <th className="px-2 py-1.5 font-medium text-zinc-400">SO / Versão</th>}
+                              {visibleComputerCols.includes('disks') && <th className="px-2 py-1.5 font-medium text-zinc-400">Disco</th>}
+                              {visibleComputerCols.includes('gpu') && <th className="px-2 py-1.5 font-medium text-zinc-400">GPU</th>}
+                              {visibleComputerCols.includes('os') && <th className="px-2 py-1.5 font-medium text-zinc-400">SO</th>}
+                              {visibleComputerCols.includes('osVersion') && <th className="px-2 py-1.5 font-medium text-zinc-400">Versão SO</th>}
+                              {visibleComputerCols.includes('osInstallDate') && <th className="px-2 py-1.5 font-medium text-zinc-400">Instalação SO</th>}
+                              {visibleComputerCols.includes('lastBootTime') && <th className="px-2 py-1.5 font-medium text-zinc-400">Último Boot</th>}
                               {visibleComputerCols.includes('ip') && <th className="px-2 py-1.5 font-medium text-zinc-400">IP</th>}
+                              {visibleComputerCols.includes('macAddress') && <th className="px-2 py-1.5 font-medium text-zinc-400">MAC</th>}
+                              {visibleComputerCols.includes('biosVersion') && <th className="px-2 py-1.5 font-medium text-zinc-400">BIOS</th>}
+                              {visibleComputerCols.includes('purchaseDate') && <th className="px-2 py-1.5 font-medium text-zinc-400">Data Compra</th>}
+                              {visibleComputerCols.includes('warrantyExpiry') && <th className="px-2 py-1.5 font-medium text-zinc-400">Garantia</th>}
+                              {visibleComputerCols.includes('healthStatus') && <th className="px-2 py-1.5 font-medium text-zinc-400">Condição</th>}
                               {visibleComputerCols.includes('notes') && <th className="px-2 py-1.5 font-medium text-zinc-400">Observações</th>}
                               {visibleComputerCols.includes('lastSeen') && <th className="px-2 py-1.5 font-medium text-zinc-400">Atualizado</th>}
                               {visibleComputerCols.includes('actions') && <th className="px-2 py-1.5 font-medium text-right text-zinc-400">Ações</th>}
@@ -841,28 +925,43 @@ export default function PCPortfolio() {
                               <tr key={comp.id} className="computer-row hover:bg-zinc-900/70 border-t border-zinc-800">
                                 {visibleComputerCols.includes('status') && <td className="px-2 py-1"><StatusDot lastSeen={comp.lastSeen} /></td>}
                                 {visibleComputerCols.includes('hostname') && <td className="px-2 py-1 font-medium whitespace-nowrap">{comp.hostname}</td>}
-                                {visibleComputerCols.includes('manufacturer') && (
-                                  <td className="px-2 py-1 whitespace-nowrap text-zinc-300">
-                                    {comp.manufacturer ? `${comp.manufacturer} / ${comp.model || ''}` : '—'}
-                                  </td>
-                                )}
+                                {visibleComputerCols.includes('manufacturer') && <td className="px-2 py-1 whitespace-nowrap text-zinc-300">{comp.manufacturer || '—'}</td>}
+                                {visibleComputerCols.includes('model') && <td className="px-2 py-1 whitespace-nowrap text-zinc-300">{comp.model || '—'}</td>}
+                                {visibleComputerCols.includes('serialNumber') && <td className="px-2 py-1 font-mono text-[9px] text-zinc-400 whitespace-nowrap">{comp.serialNumber || '—'}</td>}
+                                {visibleComputerCols.includes('assetTag') && <td className="px-2 py-1 text-zinc-300 whitespace-nowrap">{comp.assetTag || '—'}</td>}
                                 {visibleComputerCols.includes('cpu') && (
                                   <td className="px-2 py-1 whitespace-nowrap text-zinc-300">
                                     {comp.cpu ? (comp.cpuCores ? `${comp.cpu} (${comp.cpuCores})` : comp.cpu) : '—'}
                                   </td>
                                 )}
+                                {visibleComputerCols.includes('cpuCores') && <td className="px-2 py-1 whitespace-nowrap text-zinc-300">{comp.cpuCores || '—'}</td>}
                                 {visibleComputerCols.includes('ram') && <td className="px-2 py-1 whitespace-nowrap">{formatGB(comp.ramGB)}</td>}
                                 {visibleComputerCols.includes('disks') && (
                                   <td className="px-2 py-1 whitespace-nowrap text-[9px]">
                                     {renderDisks(comp.disks, comp.diskGB)}
                                   </td>
                                 )}
-                                {visibleComputerCols.includes('os') && (
-                                  <td className="px-2 py-1 whitespace-nowrap text-zinc-300">
-                                    {comp.os ? `${comp.os} ${comp.osVersion || ''}`.trim() : '—'}
+                                {visibleComputerCols.includes('gpu') && <td className="px-2 py-1 whitespace-nowrap text-zinc-300">{comp.gpu || '—'}</td>}
+                                {visibleComputerCols.includes('os') && <td className="px-2 py-1 whitespace-nowrap text-zinc-300">{comp.os || '—'}</td>}
+                                {visibleComputerCols.includes('osVersion') && <td className="px-2 py-1 whitespace-nowrap text-zinc-300">{comp.osVersion || '—'}</td>}
+                                {visibleComputerCols.includes('osInstallDate') && <td className="px-2 py-1 text-[9px] text-zinc-400 whitespace-nowrap">{formatDateOnly(comp.osInstallDate)}</td>}
+                                {visibleComputerCols.includes('lastBootTime') && <td className="px-2 py-1 text-[9px] text-zinc-400 whitespace-nowrap">{formatDate(comp.lastBootTime)}</td>}
+                                {visibleComputerCols.includes('ip') && <td className="px-2 py-1 font-mono text-[9px] text-zinc-400 whitespace-nowrap">{comp.ipAddress || '—'}</td>}
+                                {visibleComputerCols.includes('macAddress') && <td className="px-2 py-1 font-mono text-[9px] text-zinc-400 whitespace-nowrap">{comp.macAddress || '—'}</td>}
+                                {visibleComputerCols.includes('biosVersion') && <td className="px-2 py-1 text-[9px] text-zinc-400 whitespace-nowrap">{comp.biosVersion || '—'}</td>}
+                                {visibleComputerCols.includes('purchaseDate') && <td className="px-2 py-1 text-[9px] text-zinc-400 whitespace-nowrap">{formatDateOnly(comp.purchaseDate)}</td>}
+                                {visibleComputerCols.includes('warrantyExpiry') && <td className="px-2 py-1 text-[9px] text-zinc-400 whitespace-nowrap">{formatDateOnly(comp.warrantyExpiry)}</td>}
+                                {visibleComputerCols.includes('healthStatus') && (
+                                  <td className="px-2 py-1 whitespace-nowrap">
+                                    <span className={`text-[9px] px-1.5 py-0.5 rounded-full font-medium ${
+                                      comp.healthStatus === 'ok' ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/20' :
+                                      comp.healthStatus === 'attention' ? 'bg-amber-500/15 text-amber-400 border border-amber-500/20' :
+                                      'bg-red-500/15 text-red-400 border border-red-500/20'
+                                    }`}>
+                                      {comp.healthStatus === 'ok' ? 'OK' : comp.healthStatus === 'attention' ? 'Atenção' : 'Crítico'}
+                                    </span>
                                   </td>
                                 )}
-                                {visibleComputerCols.includes('ip') && <td className="px-2 py-1 font-mono text-[9px] text-zinc-400 whitespace-nowrap">{comp.ipAddress || '—'}</td>}
                                 {visibleComputerCols.includes('notes') && <td className="px-2 py-1 text-[9px] text-zinc-400 max-w-[200px] truncate" title={comp.notes || ''}>{comp.notes || '—'}</td>}
                                 {visibleComputerCols.includes('lastSeen') && <td className="px-2 py-1 text-[9px] text-zinc-400 whitespace-nowrap">{formatDate(comp.lastSeen)}</td>}
                                 {visibleComputerCols.includes('actions') && (
@@ -896,14 +995,24 @@ export default function PCPortfolio() {
                             <tr className="text-left">
                               {visibleDeviceCols.includes('status') && <th className="px-2 py-1.5 font-medium text-zinc-400"></th>}
                               {visibleDeviceCols.includes('name') && <th className="px-2 py-1.5 font-medium text-zinc-400">Nome</th>}
-                              {visibleDeviceCols.includes('manufacturer') && <th className="px-2 py-1.5 font-medium text-zinc-400">Fabricante/Modelo</th>}
-                              {visibleDeviceCols.includes('os') && <th className="px-2 py-1.5 font-medium text-zinc-400">SO / Versão</th>}
+                              {visibleDeviceCols.includes('manufacturer') && <th className="px-2 py-1.5 font-medium text-zinc-400">Fabricante</th>}
+                              {visibleDeviceCols.includes('model') && <th className="px-2 py-1.5 font-medium text-zinc-400">Modelo</th>}
+                              {visibleDeviceCols.includes('serialNumber') && <th className="px-2 py-1.5 font-medium text-zinc-400">Núm. Série</th>}
+                              {visibleDeviceCols.includes('assetTag') && <th className="px-2 py-1.5 font-medium text-zinc-400">Tag Ativo</th>}
+                              {visibleDeviceCols.includes('os') && <th className="px-2 py-1.5 font-medium text-zinc-400">SO</th>}
+                              {visibleDeviceCols.includes('osVersion') && <th className="px-2 py-1.5 font-medium text-zinc-400">Versão SO</th>}
                               {visibleDeviceCols.includes('imei') && <th className="px-2 py-1.5 font-medium text-zinc-400">IMEI</th>}
                               {visibleDeviceCols.includes('storage') && <th className="px-2 py-1.5 font-medium text-zinc-400">Armazenamento</th>}
                               {visibleDeviceCols.includes('ram') && <th className="px-2 py-1.5 font-medium text-zinc-400">RAM</th>}
                               {visibleDeviceCols.includes('phone') && <th className="px-2 py-1.5 font-medium text-zinc-400">Telefone</th>}
                               {visibleDeviceCols.includes('battery') && <th className="px-2 py-1.5 font-medium text-zinc-400">Bateria</th>}
-                              {visibleDeviceCols.includes('devStatus') && <th className="px-2 py-1.5 font-medium text-zinc-400">Status</th>}
+                              {visibleDeviceCols.includes('ip') && <th className="px-2 py-1.5 font-medium text-zinc-400">IP</th>}
+                              {visibleDeviceCols.includes('macAddress') && <th className="px-2 py-1.5 font-medium text-zinc-400">MAC</th>}
+                              {visibleDeviceCols.includes('purchaseDate') && <th className="px-2 py-1.5 font-medium text-zinc-400">Data Compra</th>}
+                              {visibleDeviceCols.includes('warrantyExpiry') && <th className="px-2 py-1.5 font-medium text-zinc-400">Garantia</th>}
+                              {visibleDeviceCols.includes('devStatus') && <th className="px-2 py-1.5 font-medium text-zinc-400">Status Ativo</th>}
+                              {visibleDeviceCols.includes('healthStatus') && <th className="px-2 py-1.5 font-medium text-zinc-400">Condição</th>}
+                              {visibleDeviceCols.includes('notes') && <th className="px-2 py-1.5 font-medium text-zinc-400">Observações</th>}
                               {visibleDeviceCols.includes('lastSeen') && <th className="px-2 py-1.5 font-medium text-zinc-400">Atualizado</th>}
                               {visibleDeviceCols.includes('actions') && <th className="px-2 py-1.5 font-medium text-right text-zinc-400">Ações</th>}
                             </tr>
@@ -913,16 +1022,12 @@ export default function PCPortfolio() {
                               <tr key={device.id} className="computer-row hover:bg-zinc-900/70 border-t border-zinc-800">
                                 {visibleDeviceCols.includes('status') && <td className="px-2 py-1"><StatusDot lastSeen={device.lastSeen} /></td>}
                                 {visibleDeviceCols.includes('name') && <td className="px-2 py-1 font-medium whitespace-nowrap">{device.name}</td>}
-                                {visibleDeviceCols.includes('manufacturer') && (
-                                  <td className="px-2 py-1 whitespace-nowrap text-zinc-300">
-                                    {device.manufacturer ? `${device.manufacturer} / ${device.model || ''}` : device.model || '—'}
-                                  </td>
-                                )}
-                                {visibleDeviceCols.includes('os') && (
-                                  <td className="px-2 py-1 whitespace-nowrap text-zinc-300">
-                                    {device.os ? `${device.os} ${device.osVersion || ''}`.trim() : '—'}
-                                  </td>
-                                )}
+                                {visibleDeviceCols.includes('manufacturer') && <td className="px-2 py-1 whitespace-nowrap text-zinc-300">{device.manufacturer || '—'}</td>}
+                                {visibleDeviceCols.includes('model') && <td className="px-2 py-1 whitespace-nowrap text-zinc-300">{device.model || '—'}</td>}
+                                {visibleDeviceCols.includes('serialNumber') && <td className="px-2 py-1 font-mono text-[9px] text-zinc-400 whitespace-nowrap">{device.serialNumber || '—'}</td>}
+                                {visibleDeviceCols.includes('assetTag') && <td className="px-2 py-1 text-zinc-300 whitespace-nowrap">{device.assetTag || '—'}</td>}
+                                {visibleDeviceCols.includes('os') && <td className="px-2 py-1 whitespace-nowrap text-zinc-300">{device.os || '—'}</td>}
+                                {visibleDeviceCols.includes('osVersion') && <td className="px-2 py-1 whitespace-nowrap text-zinc-300">{device.osVersion || '—'}</td>}
                                 {visibleDeviceCols.includes('imei') && <td className="px-2 py-1 font-mono text-[9px] text-zinc-400 whitespace-nowrap">{device.imei || '—'}</td>}
                                 {visibleDeviceCols.includes('storage') && <td className="px-2 py-1 whitespace-nowrap">{device.storageGB ? `${device.storageGB} GB` : '—'}</td>}
                                 {visibleDeviceCols.includes('ram') && <td className="px-2 py-1 whitespace-nowrap">{device.ramGB ? `${device.ramGB} GB` : '—'}</td>}
@@ -936,6 +1041,10 @@ export default function PCPortfolio() {
                                     ) : '—'}
                                   </td>
                                 )}
+                                {visibleDeviceCols.includes('ip') && <td className="px-2 py-1 font-mono text-[9px] text-zinc-400 whitespace-nowrap">{device.ipAddress || '—'}</td>}
+                                {visibleDeviceCols.includes('macAddress') && <td className="px-2 py-1 font-mono text-[9px] text-zinc-400 whitespace-nowrap">{device.macAddress || '—'}</td>}
+                                {visibleDeviceCols.includes('purchaseDate') && <td className="px-2 py-1 text-[9px] text-zinc-400 whitespace-nowrap">{formatDateOnly(device.purchaseDate)}</td>}
+                                {visibleDeviceCols.includes('warrantyExpiry') && <td className="px-2 py-1 text-[9px] text-zinc-400 whitespace-nowrap">{formatDateOnly(device.warrantyExpiry)}</td>}
                                 {visibleDeviceCols.includes('devStatus') && (
                                   <td className="px-2 py-1 whitespace-nowrap">
                                     <span className={`text-[9px] px-1.5 py-0.5 rounded-full ${
@@ -950,6 +1059,18 @@ export default function PCPortfolio() {
                                     </span>
                                   </td>
                                 )}
+                                {visibleDeviceCols.includes('healthStatus') && (
+                                  <td className="px-2 py-1 whitespace-nowrap">
+                                    <span className={`text-[9px] px-1.5 py-0.5 rounded-full font-medium ${
+                                      device.healthStatus === 'ok' ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/20' :
+                                      device.healthStatus === 'attention' ? 'bg-amber-500/15 text-amber-400 border border-amber-500/20' :
+                                      'bg-red-500/15 text-red-400 border border-red-500/20'
+                                    }`}>
+                                      {device.healthStatus === 'ok' ? 'OK' : device.healthStatus === 'attention' ? 'Atenção' : 'Crítico'}
+                                    </span>
+                                  </td>
+                                )}
+                                {visibleDeviceCols.includes('notes') && <td className="px-2 py-1 text-[9px] text-zinc-400 max-w-[200px] truncate" title={device.notes || ''}>{device.notes || '—'}</td>}
                                 {visibleDeviceCols.includes('lastSeen') && <td className="px-2 py-1 text-[9px] text-zinc-400 whitespace-nowrap">{formatDate(device.lastSeen)}</td>}
                                 {visibleDeviceCols.includes('actions') && (
                                   <td className="px-2 py-1 text-right">
@@ -1007,16 +1128,12 @@ export default function PCPortfolio() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {[
                 { key: 'hostname', label: 'Hostname *' },
-                { key: 'manufacturer', label: 'Fabricante' },
-                { key: 'model', label: 'Modelo' },
                 { key: 'serialNumber', label: 'Número de Série' },
                 { key: 'assetTag', label: 'Tag do Ativo' },
-                { key: 'cpu', label: 'Processador' },
                 { key: 'cpuCores', label: 'Núcleos CPU', type: 'number' },
                 { key: 'ramGB', label: 'RAM (GB)', type: 'number' },
                 { key: 'diskGB', label: 'Disco (GB)', type: 'number' },
                 { key: 'gpu', label: 'GPU' },
-                { key: 'os', label: 'Sistema Operacional' },
                 { key: 'osVersion', label: 'Versão do SO' },
                 { key: 'osInstallDate', label: 'Data Instalação SO', type: 'date' },
                 { key: 'lastBootTime', label: 'Última Inicialização', type: 'datetime-local' },
@@ -1038,6 +1155,47 @@ export default function PCPortfolio() {
               ))}
 
               <div>
+                <label className="block text-xs text-zinc-400 mb-1">Fabricante</label>
+                <Combobox
+                  value={computerForm.manufacturer || ''}
+                  onChange={(val) => setComputerForm({ ...computerForm, manufacturer: val })}
+                  options={COMPUTER_MANUFACTURERS}
+                  placeholder="Selecione ou digite..."
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs text-zinc-400 mb-1">Modelo</label>
+                <input
+                  type="text"
+                  value={computerForm.model || ''}
+                  onChange={(e) => setComputerForm({ ...computerForm, model: e.target.value })}
+                  className="w-full"
+                  placeholder="Ex: OptiPlex 7090"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs text-zinc-400 mb-1">Processador</label>
+                <Combobox
+                  value={computerForm.cpu || ''}
+                  onChange={(val) => setComputerForm({ ...computerForm, cpu: val })}
+                  options={CPUS}
+                  placeholder="Selecione ou digite..."
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs text-zinc-400 mb-1">Sistema Operacional</label>
+                <Combobox
+                  value={computerForm.os || ''}
+                  onChange={(val) => setComputerForm({ ...computerForm, os: val })}
+                  options={OSS}
+                  placeholder="Selecione ou digite..."
+                />
+              </div>
+
+              <div>
                 <label className="block text-xs text-zinc-400 mb-1">Status</label>
                 <select
                   value={computerForm.status || 'active'}
@@ -1048,6 +1206,19 @@ export default function PCPortfolio() {
                   <option value="decommissioned">Descomissionado</option>
                   <option value="repair">Em manutenção</option>
                   <option value="storage">Em estoque</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs text-zinc-400 mb-1">Condição</label>
+                <select
+                  value={computerForm.healthStatus || 'ok'}
+                  onChange={(e) => setComputerForm({ ...computerForm, healthStatus: e.target.value })}
+                  className="w-full"
+                >
+                  <option value="ok">🟢 OK</option>
+                  <option value="attention">🟡 Atenção</option>
+                  <option value="critical">🔴 Crítico</option>
                 </select>
               </div>
 
@@ -1074,14 +1245,31 @@ export default function PCPortfolio() {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs text-zinc-400 mb-1">Nome *</label>
+                <input
+                  type="text"
+                  value={deviceForm.name || ''}
+                  onChange={(e) => setDeviceForm({ ...deviceForm, name: e.target.value })}
+                  className="w-full"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs text-zinc-400 mb-1">Fabricante</label>
+                <Combobox
+                  value={deviceForm.manufacturer || ''}
+                  onChange={(val) => setDeviceForm({ ...deviceForm, manufacturer: val })}
+                  options={DEVICE_MANUFACTURERS}
+                  placeholder="Selecione ou digite..."
+                />
+              </div>
+
               {[
-                { key: 'name', label: 'Nome *' },
-                { key: 'manufacturer', label: 'Fabricante' },
                 { key: 'model', label: 'Modelo' },
                 { key: 'serialNumber', label: 'Número de Série' },
                 { key: 'imei', label: 'IMEI' },
                 { key: 'phoneNumber', label: 'Número de Telefone' },
-                { key: 'os', label: 'Sistema Operacional' },
                 { key: 'osVersion', label: 'Versão do SO' },
                 { key: 'storageGB', label: 'Armazenamento (GB)', type: 'number' },
                 { key: 'ramGB', label: 'RAM (GB)', type: 'number' },
@@ -1104,6 +1292,16 @@ export default function PCPortfolio() {
               ))}
 
               <div>
+                <label className="block text-xs text-zinc-400 mb-1">Sistema Operacional</label>
+                <Combobox
+                  value={deviceForm.os || ''}
+                  onChange={(val) => setDeviceForm({ ...deviceForm, os: val })}
+                  options={DEVICE_OSS}
+                  placeholder="Selecione ou digite..."
+                />
+              </div>
+
+              <div>
                 <label className="block text-xs text-zinc-400 mb-1">Status</label>
                 <select
                   value={deviceForm.status || 'active'}
@@ -1114,6 +1312,19 @@ export default function PCPortfolio() {
                   <option value="decommissioned">Descomissionado</option>
                   <option value="maintenance">Em manutenção</option>
                   <option value="stock">Em estoque</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs text-zinc-400 mb-1">Condição</label>
+                <select
+                  value={deviceForm.healthStatus || 'ok'}
+                  onChange={(e) => setDeviceForm({ ...deviceForm, healthStatus: e.target.value })}
+                  className="w-full"
+                >
+                  <option value="ok">🟢 OK</option>
+                  <option value="attention">🟡 Atenção</option>
+                  <option value="critical">🔴 Crítico</option>
                 </select>
               </div>
 

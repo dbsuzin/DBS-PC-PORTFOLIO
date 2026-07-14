@@ -53,6 +53,11 @@ export async function POST(request: NextRequest) {
         macAddress: computerData.macAddress || null,
         biosVersion: computerData.biosVersion || null,
         notes: computerData.notes || null,
+        assetTag: computerData.assetTag || null,
+        purchaseDate: computerData.purchaseDate ? new Date(computerData.purchaseDate) : null,
+        warrantyExpiry: computerData.warrantyExpiry ? new Date(computerData.warrantyExpiry) : null,
+        status: computerData.status || 'active',
+        healthStatus: computerData.healthStatus || 'ok',
         lastSeen: new Date(),
       }
     });
