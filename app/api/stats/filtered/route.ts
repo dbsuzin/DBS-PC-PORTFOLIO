@@ -13,6 +13,58 @@ export async function GET(request: NextRequest) {
     const now = new Date();
     const oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
     const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+    const ninetyDaysLater = new Date(now.getTime() + 90 * 24 * 60 * 60 * 1000);
+
+    if (filter === 'problems') {
+      const computers = await prisma.computer.findMany({
+        where: {
+          OR: [
+            { lastSeen: { gte: oneDayAgo, lt: sevenDaysAgo } },
+            { lastSeen: { lt: sevenDaysAgo } },
+            { disks: { contains: 'GB livre' } },
+            { warrantyExpiry: { gte: now, lte: ninetyDaysLater } },
+          ],
+        },
+        include: {
+          company: { select: { id: true, name: true } },
+        },
+        orderBy: { lastSeen: 'desc' },
+      });
+
+      const devices = await prisma.device.findMany({
+        where: {
+          OR: [
+            { lastSeen: { gte: oneDayAgo, lt: sevenDaysAgo } },
+            { lastSeen: { lt: sevenDaysAgo } },
+            { warrantyExpiry: { gte: now, lte: ninetyDaysLater } },
+          ],
+        },
+        include: {
+          company: { select: { id: true, name: true } },
+        },
+        orderBy: { lastSeen: 'desc' },
+      });
+
+      const grouped: Record<string, { company: { id: string; name: string }; computers: typeof computers; devices: typeof devices }> = {};
+
+      for (const comp of computers) {
+        const companyId = comp.companyId;
+        if (!grouped[companyId]) {
+          grouped[companyId] = { company: comp.company, computers: [], devices: [] };
+        }
+        grouped[companyId].computers.push(comp);
+      }
+
+      for (const dev of devices) {
+        const companyId = dev.companyId;
+        if (!grouped[companyId]) {
+          grouped[companyId] = { company: dev.company, computers: [], devices: [] };
+        }
+        grouped[companyId].devices.push(dev);
+      }
+
+      return NextResponse.json({ filter, total: computers.length + devices.length, groups: Object.values(grouped) });
+    }
 
     const deviceFilters: Record<string, any> = {
       'devicesOnline': { lastSeen: { gte: oneDayAgo } },

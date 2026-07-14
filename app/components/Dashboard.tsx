@@ -2,8 +2,8 @@
 
 import React, { useState, useEffect } from 'react';
 import { 
-  Monitor, Building2, Wifi, WifiOff, AlertTriangle, HardDrive, 
-  Clock, ChevronRight, Activity, X, ExternalLink, Smartphone
+  Monitor, Building2, AlertTriangle, 
+  ChevronRight, Activity, X, ExternalLink, Smartphone
 } from 'lucide-react';
 
 interface Stats {
@@ -63,15 +63,7 @@ interface DashboardProps {
 }
 
 const FILTER_LABELS: Record<string, { title: string; icon: any; color: string }> = {
-  online: { title: 'Computadores Online', icon: Wifi, color: 'text-emerald-400' },
-  stale: { title: 'Computadores Stale (1-7 dias)', icon: Clock, color: 'text-amber-400' },
-  offline: { title: 'Computadores Offline', icon: WifiOff, color: 'text-red-400' },
-  lowDisk: { title: 'Disco com Pouco Espaço', icon: HardDrive, color: 'text-orange-400' },
-  warranty: { title: 'Garantia Vencendo (90 dias)', icon: AlertTriangle, color: 'text-yellow-400' },
-  devicesOnline: { title: 'Aparelhos Online', icon: Smartphone, color: 'text-emerald-400' },
-  devicesStale: { title: 'Aparelhos Stale (1-7 dias)', icon: Smartphone, color: 'text-amber-400' },
-  devicesOffline: { title: 'Aparelhos Offline', icon: Smartphone, color: 'text-red-400' },
-  deviceWarranty: { title: 'Garantia Aparelhos (90 dias)', icon: AlertTriangle, color: 'text-yellow-400' },
+  problems: { title: 'Problemas Encontrados', icon: AlertTriangle, color: 'text-red-400' },
 };
 
 export default function Dashboard({ onSelectCompany }: DashboardProps) {
@@ -147,18 +139,12 @@ export default function Dashboard({ onSelectCompany }: DashboardProps) {
 
   if (!stats) return null;
 
+  const totalProblems = stats.stale + stats.offline + stats.lowDisk + stats.warrantyExpiring + stats.devicesStale + stats.devicesOffline + stats.deviceWarrantyExpiring;
+
   const statCards = [
-    { label: 'Total PCs', value: stats.totalComputers, filter: 'all', icon: Monitor, color: 'text-sky-400', bg: 'bg-sky-500/10' },
-    { label: 'Online', value: stats.online, filter: 'online', icon: Wifi, color: 'text-emerald-400', bg: 'bg-emerald-500/10' },
-    { label: 'Stale (1-7d)', value: stats.stale, filter: 'stale', icon: Clock, color: 'text-amber-400', bg: 'bg-amber-500/10' },
-    { label: 'Offline', value: stats.offline, filter: 'offline', icon: WifiOff, color: 'text-red-400', bg: 'bg-red-500/10' },
-    { label: 'Disco Baixo', value: stats.lowDisk, filter: 'lowDisk', icon: HardDrive, color: 'text-orange-400', bg: 'bg-orange-500/10' },
-    { label: 'Garantia (90d)', value: stats.warrantyExpiring, filter: 'warranty', icon: AlertTriangle, color: 'text-yellow-400', bg: 'bg-yellow-500/10' },
+    { label: 'Total Computadores', value: stats.totalComputers, filter: 'all', icon: Monitor, color: 'text-sky-400', bg: 'bg-sky-500/10' },
     { label: 'Total Aparelhos', value: stats.totalDevices, filter: 'all', icon: Smartphone, color: 'text-purple-400', bg: 'bg-purple-500/10' },
-    { label: 'Aparelhos Online', value: stats.devicesOnline, filter: 'devicesOnline', icon: Smartphone, color: 'text-emerald-400', bg: 'bg-emerald-500/10' },
-    { label: 'Aparelhos Stale', value: stats.devicesStale, filter: 'devicesStale', icon: Smartphone, color: 'text-amber-400', bg: 'bg-amber-500/10' },
-    { label: 'Aparelhos Offline', value: stats.devicesOffline, filter: 'devicesOffline', icon: Smartphone, color: 'text-red-400', bg: 'bg-red-500/10' },
-    { label: 'Garantia Aparelhos', value: stats.deviceWarrantyExpiring, filter: 'deviceWarranty', icon: AlertTriangle, color: 'text-yellow-400', bg: 'bg-yellow-500/10' },
+    { label: 'Problemas', value: totalProblems, filter: 'problems', icon: AlertTriangle, color: 'text-red-400', bg: 'bg-red-500/10' },
   ];
 
   return (
@@ -173,7 +159,7 @@ export default function Dashboard({ onSelectCompany }: DashboardProps) {
         </button>
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {statCards.map((card) => (
           <div
             key={card.label}
@@ -304,7 +290,7 @@ export default function Dashboard({ onSelectCompany }: DashboardProps) {
               </div>
             ) : filteredGroups.length === 0 ? (
               <div className="py-16 text-center text-zinc-500 text-sm">
-                Nenhum item encontrado.
+                Nenhum problema encontrado.
               </div>
             ) : (
               <div className="space-y-5">
@@ -336,10 +322,10 @@ export default function Dashboard({ onSelectCompany }: DashboardProps) {
                             {comp.ipAddress && <span className="font-mono text-zinc-600 hidden md:inline">{comp.ipAddress}</span>}
                           </div>
                           <div className="flex items-center gap-2 text-zinc-500 flex-shrink-0">
-                            {activeFilter === 'lowDisk' && comp.disks && (
+                            {comp.disks && (
                               <span className="text-orange-400/80 text-[10px] max-w-[180px] truncate hidden lg:inline">{comp.disks}</span>
                             )}
-                            {activeFilter === 'warranty' && comp.warrantyExpiry && (
+                            {comp.warrantyExpiry && (
                               <span className="text-yellow-400/80 text-[10px]">{new Date(comp.warrantyExpiry).toLocaleDateString('pt-BR')}</span>
                             )}
                             <span className="text-[10px]">{formatLastSeen(comp.lastSeen)}</span>
@@ -360,7 +346,7 @@ export default function Dashboard({ onSelectCompany }: DashboardProps) {
                             {device.ipAddress && <span className="font-mono text-zinc-600 hidden md:inline">{device.ipAddress}</span>}
                           </div>
                           <div className="flex items-center gap-2 text-zinc-500 flex-shrink-0">
-                            {activeFilter === 'deviceWarranty' && device.warrantyExpiry && (
+                            {device.warrantyExpiry && (
                               <span className="text-yellow-400/80 text-[10px]">{new Date(device.warrantyExpiry).toLocaleDateString('pt-BR')}</span>
                             )}
                             <span className="text-[10px]">{formatLastSeen(device.lastSeen)}</span>
