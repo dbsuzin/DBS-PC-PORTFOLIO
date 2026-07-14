@@ -20,7 +20,7 @@ export async function GET() {
 
 export async function POST(request: NextRequest) {
   try {
-    const { name, contact } = await request.json();
+    const { name, contact, logo } = await request.json();
 
     if (!name || name.trim().length < 2) {
       return NextResponse.json({ error: 'Nome da empresa é obrigatório' }, { status: 400 });
@@ -30,6 +30,7 @@ export async function POST(request: NextRequest) {
       data: {
         name: name.trim(),
         contact: contact?.trim() || null,
+        logo: logo || null,
       },
       include: {
         _count: { select: { computers: true } }

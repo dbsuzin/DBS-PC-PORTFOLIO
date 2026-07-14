@@ -4,7 +4,7 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { 
   Plus, Building2, Monitor, Copy, Trash2, Edit2, RefreshCw, 
   X, FileSpreadsheet, HelpCircle, LogOut, LayoutDashboard, History,
-  Shield, Smartphone, Battery, Signal, Columns3, Check
+  Shield, Smartphone, Battery, Signal, Columns3, Check, Image
 } from 'lucide-react';
 import { toast } from 'sonner';
 import LoginModal from './components/LoginModal';
@@ -12,6 +12,7 @@ import Dashboard from './components/Dashboard';
 import StatusDot from './components/StatusDot';
 import HistoryModal from './components/HistoryModal';
 import Combobox from './components/Combobox';
+import { useResizableColumns } from './hooks/useResizableColumns';
 
 const COMPUTER_MANUFACTURERS = ['Dell', 'Lenovo', 'HP', 'Acer', 'Asus', 'Samsung', 'Apple', 'Microsoft', 'MSI', 'Huawei'];
 const DEVICE_MANUFACTURERS = ['Samsung', 'Apple', 'Xiaomi', 'Motorola', 'LG', 'Huawei', 'OnePlus', 'Google', 'Sony', 'Nokia'];
@@ -110,10 +111,23 @@ interface Company {
   id: string;
   name: string;
   contact?: string;
+  logo?: string;
   apiKey: string;
   createdAt: string;
   _count?: { computers: number };
   computers?: Computer[];
+}
+
+function ResizeHandle({ onMouseDown }: { onMouseDown: (e: React.MouseEvent) => void }) {
+  return (
+    <div
+      onMouseDown={onMouseDown}
+      className="absolute right-0 top-0 bottom-0 w-1.5 cursor-col-resize hover:bg-sky-500/40 transition-colors group"
+      style={{ zIndex: 1 }}
+    >
+      <div className="absolute right-0 top-1/2 -translate-y-1/2 w-px h-3 bg-zinc-600 group-hover:bg-sky-400 transition-colors" />
+    </div>
+  );
 }
 
 export default function PCPortfolio() {
@@ -129,7 +143,7 @@ export default function PCPortfolio() {
   const [historyComputer, setHistoryComputer] = useState<Computer | null>(null);
   const [editingCompany, setEditingCompany] = useState<Company | null>(null);
   const [editingComputer, setEditingComputer] = useState<Computer | null>(null);
-  const [formData, setFormData] = useState({ name: '', contact: '' });
+  const [formData, setFormData] = useState({ name: '', contact: '', logo: '' });
   const [computerForm, setComputerForm] = useState<any>({});
   const [searchTerm, setSearchTerm] = useState('');
   const [autoRefresh, setAutoRefresh] = useState(true);
@@ -177,6 +191,28 @@ export default function PCPortfolio() {
       prev.includes(col) ? prev.filter(c => c !== col) : [...prev, col]
     );
   };
+
+  const computerColWidths = useResizableColumns({
+    storageKey: 'pc-portfolio-computer-col-widths',
+    defaultWidths: {
+      status: 30, hostname: 130, manufacturer: 100, model: 100, serialNumber: 110,
+      assetTag: 80, cpu: 140, cpuCores: 50, ram: 60, disks: 140, gpu: 100,
+      os: 80, osVersion: 80, osInstallDate: 90, lastBootTime: 120, ip: 100,
+      macAddress: 120, biosVersion: 80, purchaseDate: 90, warrantyExpiry: 90,
+      healthStatus: 70, notes: 160, lastSeen: 120, actions: 70,
+    },
+  });
+
+  const deviceColWidths = useResizableColumns({
+    storageKey: 'pc-portfolio-device-col-widths',
+    defaultWidths: {
+      status: 30, name: 130, manufacturer: 100, model: 100, serialNumber: 110,
+      assetTag: 80, os: 80, osVersion: 80, imei: 120, storage: 80,
+      ram: 60, phone: 100, battery: 60, ip: 100, macAddress: 120,
+      purchaseDate: 90, warrantyExpiry: 90, devStatus: 90, healthStatus: 70,
+      notes: 160, lastSeen: 120, actions: 70,
+    },
+  });
 
   useEffect(() => {
     const handleClick = () => setShowColConfig(null);
@@ -281,10 +317,10 @@ export default function PCPortfolio() {
   const openCompanyModal = (company?: Company) => {
     if (company) {
       setEditingCompany(company);
-      setFormData({ name: company.name, contact: company.contact || '' });
+      setFormData({ name: company.name, contact: company.contact || '', logo: company.logo || '' });
     } else {
       setEditingCompany(null);
-      setFormData({ name: '', contact: '' });
+      setFormData({ name: '', contact: '', logo: '' });
     }
     setShowCompanyModal(true);
   };
@@ -660,9 +696,13 @@ export default function PCPortfolio() {
                   }`}
                 >
                   <div className="flex items-center gap-2 min-w-0">
-                    <div className="h-6 w-6 rounded-lg bg-sky-500/10 flex items-center justify-center flex-shrink-0 border border-sky-500/15">
-                      <Building2 className="h-3.5 w-3.5 text-sky-400" />
-                    </div>
+                    {company.logo ? (
+                      <img src={company.logo} alt="" className="h-6 w-6 rounded-lg object-cover flex-shrink-0 border border-zinc-700" />
+                    ) : (
+                      <div className="h-6 w-6 rounded-lg bg-sky-500/10 flex items-center justify-center flex-shrink-0 border border-sky-500/15">
+                        <Building2 className="h-3.5 w-3.5 text-sky-400" />
+                      </div>
+                    )}
                     <div className="min-w-0">
                       <div className="font-medium truncate">{company.name}</div>
                       <div className="text-xs text-zinc-500">{company._count?.computers || 0} PC(s)</div>
@@ -717,6 +757,9 @@ export default function PCPortfolio() {
               <div className="border-b border-zinc-800/50 px-3 py-2 flex items-center justify-between bg-zinc-950/30">
                 <div>
                   <div className="flex items-center gap-3">
+                    {selectedCompany.logo ? (
+                      <img src={selectedCompany.logo} alt="" className="h-10 w-10 rounded-xl object-cover border border-zinc-700" />
+                    ) : null}
                     <h2 className="text-3xl font-semibold tracking-tight glow-text">{selectedCompany.name}</h2>
                     <span className="text-xs px-3 py-1 rounded-full bg-sky-500/10 border border-sky-500/20 text-sky-400">{computers.length} computadores</span>
                   </div>
@@ -894,65 +937,65 @@ export default function PCPortfolio() {
                         <table className="w-full text-[10px]">
                           <thead>
                             <tr className="text-left">
-                              {visibleComputerCols.includes('status') && <th className="px-2 py-1.5 font-medium text-zinc-400"></th>}
-                              {visibleComputerCols.includes('hostname') && <th className="px-2 py-1.5 font-medium text-zinc-400">Hostname</th>}
-                              {visibleComputerCols.includes('manufacturer') && <th className="px-2 py-1.5 font-medium text-zinc-400">Fabricante</th>}
-                              {visibleComputerCols.includes('model') && <th className="px-2 py-1.5 font-medium text-zinc-400">Modelo</th>}
-                              {visibleComputerCols.includes('serialNumber') && <th className="px-2 py-1.5 font-medium text-zinc-400">Núm. Série</th>}
-                              {visibleComputerCols.includes('assetTag') && <th className="px-2 py-1.5 font-medium text-zinc-400">Tag Ativo</th>}
-                              {visibleComputerCols.includes('cpu') && <th className="px-2 py-1.5 font-medium text-zinc-400">Processador</th>}
-                              {visibleComputerCols.includes('cpuCores') && <th className="px-2 py-1.5 font-medium text-zinc-400">Núcleos</th>}
-                              {visibleComputerCols.includes('ram') && <th className="px-2 py-1.5 font-medium text-zinc-400">RAM</th>}
-                              {visibleComputerCols.includes('disks') && <th className="px-2 py-1.5 font-medium text-zinc-400">Disco</th>}
-                              {visibleComputerCols.includes('gpu') && <th className="px-2 py-1.5 font-medium text-zinc-400">GPU</th>}
-                              {visibleComputerCols.includes('os') && <th className="px-2 py-1.5 font-medium text-zinc-400">SO</th>}
-                              {visibleComputerCols.includes('osVersion') && <th className="px-2 py-1.5 font-medium text-zinc-400">Versão SO</th>}
-                              {visibleComputerCols.includes('osInstallDate') && <th className="px-2 py-1.5 font-medium text-zinc-400">Instalação SO</th>}
-                              {visibleComputerCols.includes('lastBootTime') && <th className="px-2 py-1.5 font-medium text-zinc-400">Último Boot</th>}
-                              {visibleComputerCols.includes('ip') && <th className="px-2 py-1.5 font-medium text-zinc-400">IP</th>}
-                              {visibleComputerCols.includes('macAddress') && <th className="px-2 py-1.5 font-medium text-zinc-400">MAC</th>}
-                              {visibleComputerCols.includes('biosVersion') && <th className="px-2 py-1.5 font-medium text-zinc-400">BIOS</th>}
-                              {visibleComputerCols.includes('purchaseDate') && <th className="px-2 py-1.5 font-medium text-zinc-400">Data Compra</th>}
-                              {visibleComputerCols.includes('warrantyExpiry') && <th className="px-2 py-1.5 font-medium text-zinc-400">Garantia</th>}
-                              {visibleComputerCols.includes('healthStatus') && <th className="px-2 py-1.5 font-medium text-zinc-400">Condição</th>}
-                              {visibleComputerCols.includes('notes') && <th className="px-2 py-1.5 font-medium text-zinc-400">Observações</th>}
-                              {visibleComputerCols.includes('lastSeen') && <th className="px-2 py-1.5 font-medium text-zinc-400">Atualizado</th>}
-                              {visibleComputerCols.includes('actions') && <th className="px-2 py-1.5 font-medium text-right text-zinc-400">Ações</th>}
+                              {visibleComputerCols.includes('status') && <th className="px-2 py-1.5 font-medium text-zinc-400 relative" style={computerColWidths.getStyle('status')}> <ResizeHandle onMouseDown={(e) => computerColWidths.handleMouseDown('status', e)} /></th>}
+                              {visibleComputerCols.includes('hostname') && <th className="px-2 py-1.5 font-medium text-zinc-400 relative" style={computerColWidths.getStyle('hostname')}>Hostname <ResizeHandle onMouseDown={(e) => computerColWidths.handleMouseDown('hostname', e)} /></th>}
+                              {visibleComputerCols.includes('manufacturer') && <th className="px-2 py-1.5 font-medium text-zinc-400 relative" style={computerColWidths.getStyle('manufacturer')}>Fabricante <ResizeHandle onMouseDown={(e) => computerColWidths.handleMouseDown('manufacturer', e)} /></th>}
+                              {visibleComputerCols.includes('model') && <th className="px-2 py-1.5 font-medium text-zinc-400 relative" style={computerColWidths.getStyle('model')}>Modelo <ResizeHandle onMouseDown={(e) => computerColWidths.handleMouseDown('model', e)} /></th>}
+                              {visibleComputerCols.includes('serialNumber') && <th className="px-2 py-1.5 font-medium text-zinc-400 relative" style={computerColWidths.getStyle('serialNumber')}>Núm. Série <ResizeHandle onMouseDown={(e) => computerColWidths.handleMouseDown('serialNumber', e)} /></th>}
+                              {visibleComputerCols.includes('assetTag') && <th className="px-2 py-1.5 font-medium text-zinc-400 relative" style={computerColWidths.getStyle('assetTag')}>Tag Ativo <ResizeHandle onMouseDown={(e) => computerColWidths.handleMouseDown('assetTag', e)} /></th>}
+                              {visibleComputerCols.includes('cpu') && <th className="px-2 py-1.5 font-medium text-zinc-400 relative" style={computerColWidths.getStyle('cpu')}>Processador <ResizeHandle onMouseDown={(e) => computerColWidths.handleMouseDown('cpu', e)} /></th>}
+                              {visibleComputerCols.includes('cpuCores') && <th className="px-2 py-1.5 font-medium text-zinc-400 relative" style={computerColWidths.getStyle('cpuCores')}>Núcleos <ResizeHandle onMouseDown={(e) => computerColWidths.handleMouseDown('cpuCores', e)} /></th>}
+                              {visibleComputerCols.includes('ram') && <th className="px-2 py-1.5 font-medium text-zinc-400 relative" style={computerColWidths.getStyle('ram')}>RAM <ResizeHandle onMouseDown={(e) => computerColWidths.handleMouseDown('ram', e)} /></th>}
+                              {visibleComputerCols.includes('disks') && <th className="px-2 py-1.5 font-medium text-zinc-400 relative" style={computerColWidths.getStyle('disks')}>Disco <ResizeHandle onMouseDown={(e) => computerColWidths.handleMouseDown('disks', e)} /></th>}
+                              {visibleComputerCols.includes('gpu') && <th className="px-2 py-1.5 font-medium text-zinc-400 relative" style={computerColWidths.getStyle('gpu')}>GPU <ResizeHandle onMouseDown={(e) => computerColWidths.handleMouseDown('gpu', e)} /></th>}
+                              {visibleComputerCols.includes('os') && <th className="px-2 py-1.5 font-medium text-zinc-400 relative" style={computerColWidths.getStyle('os')}>SO <ResizeHandle onMouseDown={(e) => computerColWidths.handleMouseDown('os', e)} /></th>}
+                              {visibleComputerCols.includes('osVersion') && <th className="px-2 py-1.5 font-medium text-zinc-400 relative" style={computerColWidths.getStyle('osVersion')}>Versão SO <ResizeHandle onMouseDown={(e) => computerColWidths.handleMouseDown('osVersion', e)} /></th>}
+                              {visibleComputerCols.includes('osInstallDate') && <th className="px-2 py-1.5 font-medium text-zinc-400 relative" style={computerColWidths.getStyle('osInstallDate')}>Instalação SO <ResizeHandle onMouseDown={(e) => computerColWidths.handleMouseDown('osInstallDate', e)} /></th>}
+                              {visibleComputerCols.includes('lastBootTime') && <th className="px-2 py-1.5 font-medium text-zinc-400 relative" style={computerColWidths.getStyle('lastBootTime')}>Último Boot <ResizeHandle onMouseDown={(e) => computerColWidths.handleMouseDown('lastBootTime', e)} /></th>}
+                              {visibleComputerCols.includes('ip') && <th className="px-2 py-1.5 font-medium text-zinc-400 relative" style={computerColWidths.getStyle('ip')}>IP <ResizeHandle onMouseDown={(e) => computerColWidths.handleMouseDown('ip', e)} /></th>}
+                              {visibleComputerCols.includes('macAddress') && <th className="px-2 py-1.5 font-medium text-zinc-400 relative" style={computerColWidths.getStyle('macAddress')}>MAC <ResizeHandle onMouseDown={(e) => computerColWidths.handleMouseDown('macAddress', e)} /></th>}
+                              {visibleComputerCols.includes('biosVersion') && <th className="px-2 py-1.5 font-medium text-zinc-400 relative" style={computerColWidths.getStyle('biosVersion')}>BIOS <ResizeHandle onMouseDown={(e) => computerColWidths.handleMouseDown('biosVersion', e)} /></th>}
+                              {visibleComputerCols.includes('purchaseDate') && <th className="px-2 py-1.5 font-medium text-zinc-400 relative" style={computerColWidths.getStyle('purchaseDate')}>Data Compra <ResizeHandle onMouseDown={(e) => computerColWidths.handleMouseDown('purchaseDate', e)} /></th>}
+                              {visibleComputerCols.includes('warrantyExpiry') && <th className="px-2 py-1.5 font-medium text-zinc-400 relative" style={computerColWidths.getStyle('warrantyExpiry')}>Garantia <ResizeHandle onMouseDown={(e) => computerColWidths.handleMouseDown('warrantyExpiry', e)} /></th>}
+                              {visibleComputerCols.includes('healthStatus') && <th className="px-2 py-1.5 font-medium text-zinc-400 relative" style={computerColWidths.getStyle('healthStatus')}>Condição <ResizeHandle onMouseDown={(e) => computerColWidths.handleMouseDown('healthStatus', e)} /></th>}
+                              {visibleComputerCols.includes('notes') && <th className="px-2 py-1.5 font-medium text-zinc-400 relative" style={computerColWidths.getStyle('notes')}>Observações <ResizeHandle onMouseDown={(e) => computerColWidths.handleMouseDown('notes', e)} /></th>}
+                              {visibleComputerCols.includes('lastSeen') && <th className="px-2 py-1.5 font-medium text-zinc-400 relative" style={computerColWidths.getStyle('lastSeen')}>Atualizado <ResizeHandle onMouseDown={(e) => computerColWidths.handleMouseDown('lastSeen', e)} /></th>}
+                              {visibleComputerCols.includes('actions') && <th className="px-2 py-1.5 font-medium text-right text-zinc-400" style={computerColWidths.getStyle('actions')}>Ações</th>}
                             </tr>
                           </thead>
                           <tbody>
                             {filteredComputers.map((comp) => (
                               <tr key={comp.id} className="computer-row hover:bg-zinc-900/70 border-t border-zinc-800">
-                                {visibleComputerCols.includes('status') && <td className="px-2 py-1"><StatusDot lastSeen={comp.lastSeen} /></td>}
-                                {visibleComputerCols.includes('hostname') && <td className="px-2 py-1 font-medium whitespace-nowrap">{comp.hostname}</td>}
-                                {visibleComputerCols.includes('manufacturer') && <td className="px-2 py-1 whitespace-nowrap text-zinc-300">{comp.manufacturer || '—'}</td>}
-                                {visibleComputerCols.includes('model') && <td className="px-2 py-1 whitespace-nowrap text-zinc-300">{comp.model || '—'}</td>}
-                                {visibleComputerCols.includes('serialNumber') && <td className="px-2 py-1 font-mono text-[9px] text-zinc-400 whitespace-nowrap">{comp.serialNumber || '—'}</td>}
-                                {visibleComputerCols.includes('assetTag') && <td className="px-2 py-1 text-zinc-300 whitespace-nowrap">{comp.assetTag || '—'}</td>}
+                                {visibleComputerCols.includes('status') && <td className="px-2 py-1" style={computerColWidths.getStyle('status')}><StatusDot lastSeen={comp.lastSeen} /></td>}
+                                {visibleComputerCols.includes('hostname') && <td className="px-2 py-1 font-medium whitespace-nowrap overflow-hidden text-ellipsis" style={computerColWidths.getStyle('hostname')} title={comp.hostname}>{comp.hostname}</td>}
+                                {visibleComputerCols.includes('manufacturer') && <td className="px-2 py-1 whitespace-nowrap overflow-hidden text-ellipsis" style={computerColWidths.getStyle('manufacturer')} title={comp.manufacturer || ''}>{comp.manufacturer || '—'}</td>}
+                                {visibleComputerCols.includes('model') && <td className="px-2 py-1 whitespace-nowrap overflow-hidden text-ellipsis" style={computerColWidths.getStyle('model')} title={comp.model || ''}>{comp.model || '—'}</td>}
+                                {visibleComputerCols.includes('serialNumber') && <td className="px-2 py-1 font-mono text-[9px] text-zinc-400 whitespace-nowrap overflow-hidden text-ellipsis" style={computerColWidths.getStyle('serialNumber')} title={comp.serialNumber || ''}>{comp.serialNumber || '—'}</td>}
+                                {visibleComputerCols.includes('assetTag') && <td className="px-2 py-1 text-zinc-300 whitespace-nowrap overflow-hidden text-ellipsis" style={computerColWidths.getStyle('assetTag')} title={comp.assetTag || ''}>{comp.assetTag || '—'}</td>}
                                 {visibleComputerCols.includes('cpu') && (
-                                  <td className="px-2 py-1 whitespace-nowrap text-zinc-300">
+                                  <td className="px-2 py-1 whitespace-nowrap overflow-hidden text-ellipsis" style={computerColWidths.getStyle('cpu')} title={comp.cpu || ''}>
                                     {comp.cpu ? (comp.cpuCores ? `${comp.cpu} (${comp.cpuCores})` : comp.cpu) : '—'}
                                   </td>
                                 )}
-                                {visibleComputerCols.includes('cpuCores') && <td className="px-2 py-1 whitespace-nowrap text-zinc-300">{comp.cpuCores || '—'}</td>}
-                                {visibleComputerCols.includes('ram') && <td className="px-2 py-1 whitespace-nowrap">{formatGB(comp.ramGB)}</td>}
+                                {visibleComputerCols.includes('cpuCores') && <td className="px-2 py-1 whitespace-nowrap" style={computerColWidths.getStyle('cpuCores')}>{comp.cpuCores || '—'}</td>}
+                                {visibleComputerCols.includes('ram') && <td className="px-2 py-1 whitespace-nowrap" style={computerColWidths.getStyle('ram')}>{formatGB(comp.ramGB)}</td>}
                                 {visibleComputerCols.includes('disks') && (
-                                  <td className="px-2 py-1 whitespace-nowrap text-[9px]">
+                                  <td className="px-2 py-1 whitespace-nowrap text-[9px] overflow-hidden text-ellipsis" style={computerColWidths.getStyle('disks')}>
                                     {renderDisks(comp.disks, comp.diskGB)}
                                   </td>
                                 )}
-                                {visibleComputerCols.includes('gpu') && <td className="px-2 py-1 whitespace-nowrap text-zinc-300">{comp.gpu || '—'}</td>}
-                                {visibleComputerCols.includes('os') && <td className="px-2 py-1 whitespace-nowrap text-zinc-300">{comp.os || '—'}</td>}
-                                {visibleComputerCols.includes('osVersion') && <td className="px-2 py-1 whitespace-nowrap text-zinc-300">{comp.osVersion || '—'}</td>}
-                                {visibleComputerCols.includes('osInstallDate') && <td className="px-2 py-1 text-[9px] text-zinc-400 whitespace-nowrap">{formatDateOnly(comp.osInstallDate)}</td>}
-                                {visibleComputerCols.includes('lastBootTime') && <td className="px-2 py-1 text-[9px] text-zinc-400 whitespace-nowrap">{formatDate(comp.lastBootTime)}</td>}
-                                {visibleComputerCols.includes('ip') && <td className="px-2 py-1 font-mono text-[9px] text-zinc-400 whitespace-nowrap">{comp.ipAddress || '—'}</td>}
-                                {visibleComputerCols.includes('macAddress') && <td className="px-2 py-1 font-mono text-[9px] text-zinc-400 whitespace-nowrap">{comp.macAddress || '—'}</td>}
-                                {visibleComputerCols.includes('biosVersion') && <td className="px-2 py-1 text-[9px] text-zinc-400 whitespace-nowrap">{comp.biosVersion || '—'}</td>}
-                                {visibleComputerCols.includes('purchaseDate') && <td className="px-2 py-1 text-[9px] text-zinc-400 whitespace-nowrap">{formatDateOnly(comp.purchaseDate)}</td>}
-                                {visibleComputerCols.includes('warrantyExpiry') && <td className="px-2 py-1 text-[9px] text-zinc-400 whitespace-nowrap">{formatDateOnly(comp.warrantyExpiry)}</td>}
+                                {visibleComputerCols.includes('gpu') && <td className="px-2 py-1 whitespace-nowrap overflow-hidden text-ellipsis" style={computerColWidths.getStyle('gpu')} title={comp.gpu || ''}>{comp.gpu || '—'}</td>}
+                                {visibleComputerCols.includes('os') && <td className="px-2 py-1 whitespace-nowrap overflow-hidden text-ellipsis" style={computerColWidths.getStyle('os')} title={comp.os || ''}>{comp.os || '—'}</td>}
+                                {visibleComputerCols.includes('osVersion') && <td className="px-2 py-1 whitespace-nowrap overflow-hidden text-ellipsis" style={computerColWidths.getStyle('osVersion')} title={comp.osVersion || ''}>{comp.osVersion || '—'}</td>}
+                                {visibleComputerCols.includes('osInstallDate') && <td className="px-2 py-1 text-[9px] text-zinc-400 whitespace-nowrap" style={computerColWidths.getStyle('osInstallDate')}>{formatDateOnly(comp.osInstallDate)}</td>}
+                                {visibleComputerCols.includes('lastBootTime') && <td className="px-2 py-1 text-[9px] text-zinc-400 whitespace-nowrap" style={computerColWidths.getStyle('lastBootTime')}>{formatDate(comp.lastBootTime)}</td>}
+                                {visibleComputerCols.includes('ip') && <td className="px-2 py-1 font-mono text-[9px] text-zinc-400 whitespace-nowrap" style={computerColWidths.getStyle('ip')}>{comp.ipAddress || '—'}</td>}
+                                {visibleComputerCols.includes('macAddress') && <td className="px-2 py-1 font-mono text-[9px] text-zinc-400 whitespace-nowrap" style={computerColWidths.getStyle('macAddress')}>{comp.macAddress || '—'}</td>}
+                                {visibleComputerCols.includes('biosVersion') && <td className="px-2 py-1 text-[9px] text-zinc-400 whitespace-nowrap" style={computerColWidths.getStyle('biosVersion')}>{comp.biosVersion || '—'}</td>}
+                                {visibleComputerCols.includes('purchaseDate') && <td className="px-2 py-1 text-[9px] text-zinc-400 whitespace-nowrap" style={computerColWidths.getStyle('purchaseDate')}>{formatDateOnly(comp.purchaseDate)}</td>}
+                                {visibleComputerCols.includes('warrantyExpiry') && <td className="px-2 py-1 text-[9px] text-zinc-400 whitespace-nowrap" style={computerColWidths.getStyle('warrantyExpiry')}>{formatDateOnly(comp.warrantyExpiry)}</td>}
                                 {visibleComputerCols.includes('healthStatus') && (
-                                  <td className="px-2 py-1 whitespace-nowrap">
+                                  <td className="px-2 py-1 whitespace-nowrap" style={computerColWidths.getStyle('healthStatus')}>
                                     <span className={`text-[9px] px-1.5 py-0.5 rounded-full font-medium ${
                                       comp.healthStatus === 'ok' ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/20' :
                                       comp.healthStatus === 'attention' ? 'bg-amber-500/15 text-amber-400 border border-amber-500/20' :
@@ -962,8 +1005,8 @@ export default function PCPortfolio() {
                                     </span>
                                   </td>
                                 )}
-                                {visibleComputerCols.includes('notes') && <td className="px-2 py-1 text-[9px] text-zinc-400 max-w-[200px] truncate" title={comp.notes || ''}>{comp.notes || '—'}</td>}
-                                {visibleComputerCols.includes('lastSeen') && <td className="px-2 py-1 text-[9px] text-zinc-400 whitespace-nowrap">{formatDate(comp.lastSeen)}</td>}
+                                {visibleComputerCols.includes('notes') && <td className="px-2 py-1 text-[9px] text-zinc-400 overflow-hidden text-ellipsis whitespace-nowrap" style={computerColWidths.getStyle('notes')} title={comp.notes || ''}>{comp.notes || '—'}</td>}
+                                {visibleComputerCols.includes('lastSeen') && <td className="px-2 py-1 text-[9px] text-zinc-400 whitespace-nowrap" style={computerColWidths.getStyle('lastSeen')}>{formatDate(comp.lastSeen)}</td>}
                                 {visibleComputerCols.includes('actions') && (
                                   <td className="px-2 py-1 text-right">
                                     <div className="flex gap-0.5 justify-end">
@@ -993,47 +1036,47 @@ export default function PCPortfolio() {
                         <table className="w-full text-[10px]">
                           <thead>
                             <tr className="text-left">
-                              {visibleDeviceCols.includes('status') && <th className="px-2 py-1.5 font-medium text-zinc-400"></th>}
-                              {visibleDeviceCols.includes('name') && <th className="px-2 py-1.5 font-medium text-zinc-400">Nome</th>}
-                              {visibleDeviceCols.includes('manufacturer') && <th className="px-2 py-1.5 font-medium text-zinc-400">Fabricante</th>}
-                              {visibleDeviceCols.includes('model') && <th className="px-2 py-1.5 font-medium text-zinc-400">Modelo</th>}
-                              {visibleDeviceCols.includes('serialNumber') && <th className="px-2 py-1.5 font-medium text-zinc-400">Núm. Série</th>}
-                              {visibleDeviceCols.includes('assetTag') && <th className="px-2 py-1.5 font-medium text-zinc-400">Tag Ativo</th>}
-                              {visibleDeviceCols.includes('os') && <th className="px-2 py-1.5 font-medium text-zinc-400">SO</th>}
-                              {visibleDeviceCols.includes('osVersion') && <th className="px-2 py-1.5 font-medium text-zinc-400">Versão SO</th>}
-                              {visibleDeviceCols.includes('imei') && <th className="px-2 py-1.5 font-medium text-zinc-400">IMEI</th>}
-                              {visibleDeviceCols.includes('storage') && <th className="px-2 py-1.5 font-medium text-zinc-400">Armazenamento</th>}
-                              {visibleDeviceCols.includes('ram') && <th className="px-2 py-1.5 font-medium text-zinc-400">RAM</th>}
-                              {visibleDeviceCols.includes('phone') && <th className="px-2 py-1.5 font-medium text-zinc-400">Telefone</th>}
-                              {visibleDeviceCols.includes('battery') && <th className="px-2 py-1.5 font-medium text-zinc-400">Bateria</th>}
-                              {visibleDeviceCols.includes('ip') && <th className="px-2 py-1.5 font-medium text-zinc-400">IP</th>}
-                              {visibleDeviceCols.includes('macAddress') && <th className="px-2 py-1.5 font-medium text-zinc-400">MAC</th>}
-                              {visibleDeviceCols.includes('purchaseDate') && <th className="px-2 py-1.5 font-medium text-zinc-400">Data Compra</th>}
-                              {visibleDeviceCols.includes('warrantyExpiry') && <th className="px-2 py-1.5 font-medium text-zinc-400">Garantia</th>}
-                              {visibleDeviceCols.includes('devStatus') && <th className="px-2 py-1.5 font-medium text-zinc-400">Status Ativo</th>}
-                              {visibleDeviceCols.includes('healthStatus') && <th className="px-2 py-1.5 font-medium text-zinc-400">Condição</th>}
-                              {visibleDeviceCols.includes('notes') && <th className="px-2 py-1.5 font-medium text-zinc-400">Observações</th>}
-                              {visibleDeviceCols.includes('lastSeen') && <th className="px-2 py-1.5 font-medium text-zinc-400">Atualizado</th>}
-                              {visibleDeviceCols.includes('actions') && <th className="px-2 py-1.5 font-medium text-right text-zinc-400">Ações</th>}
+                              {visibleDeviceCols.includes('status') && <th className="px-2 py-1.5 font-medium text-zinc-400 relative" style={deviceColWidths.getStyle('status')}> <ResizeHandle onMouseDown={(e) => deviceColWidths.handleMouseDown('status', e)} /></th>}
+                              {visibleDeviceCols.includes('name') && <th className="px-2 py-1.5 font-medium text-zinc-400 relative" style={deviceColWidths.getStyle('name')}>Nome <ResizeHandle onMouseDown={(e) => deviceColWidths.handleMouseDown('name', e)} /></th>}
+                              {visibleDeviceCols.includes('manufacturer') && <th className="px-2 py-1.5 font-medium text-zinc-400 relative" style={deviceColWidths.getStyle('manufacturer')}>Fabricante <ResizeHandle onMouseDown={(e) => deviceColWidths.handleMouseDown('manufacturer', e)} /></th>}
+                              {visibleDeviceCols.includes('model') && <th className="px-2 py-1.5 font-medium text-zinc-400 relative" style={deviceColWidths.getStyle('model')}>Modelo <ResizeHandle onMouseDown={(e) => deviceColWidths.handleMouseDown('model', e)} /></th>}
+                              {visibleDeviceCols.includes('serialNumber') && <th className="px-2 py-1.5 font-medium text-zinc-400 relative" style={deviceColWidths.getStyle('serialNumber')}>Núm. Série <ResizeHandle onMouseDown={(e) => deviceColWidths.handleMouseDown('serialNumber', e)} /></th>}
+                              {visibleDeviceCols.includes('assetTag') && <th className="px-2 py-1.5 font-medium text-zinc-400 relative" style={deviceColWidths.getStyle('assetTag')}>Tag Ativo <ResizeHandle onMouseDown={(e) => deviceColWidths.handleMouseDown('assetTag', e)} /></th>}
+                              {visibleDeviceCols.includes('os') && <th className="px-2 py-1.5 font-medium text-zinc-400 relative" style={deviceColWidths.getStyle('os')}>SO <ResizeHandle onMouseDown={(e) => deviceColWidths.handleMouseDown('os', e)} /></th>}
+                              {visibleDeviceCols.includes('osVersion') && <th className="px-2 py-1.5 font-medium text-zinc-400 relative" style={deviceColWidths.getStyle('osVersion')}>Versão SO <ResizeHandle onMouseDown={(e) => deviceColWidths.handleMouseDown('osVersion', e)} /></th>}
+                              {visibleDeviceCols.includes('imei') && <th className="px-2 py-1.5 font-medium text-zinc-400 relative" style={deviceColWidths.getStyle('imei')}>IMEI <ResizeHandle onMouseDown={(e) => deviceColWidths.handleMouseDown('imei', e)} /></th>}
+                              {visibleDeviceCols.includes('storage') && <th className="px-2 py-1.5 font-medium text-zinc-400 relative" style={deviceColWidths.getStyle('storage')}>Armazenamento <ResizeHandle onMouseDown={(e) => deviceColWidths.handleMouseDown('storage', e)} /></th>}
+                              {visibleDeviceCols.includes('ram') && <th className="px-2 py-1.5 font-medium text-zinc-400 relative" style={deviceColWidths.getStyle('ram')}>RAM <ResizeHandle onMouseDown={(e) => deviceColWidths.handleMouseDown('ram', e)} /></th>}
+                              {visibleDeviceCols.includes('phone') && <th className="px-2 py-1.5 font-medium text-zinc-400 relative" style={deviceColWidths.getStyle('phone')}>Telefone <ResizeHandle onMouseDown={(e) => deviceColWidths.handleMouseDown('phone', e)} /></th>}
+                              {visibleDeviceCols.includes('battery') && <th className="px-2 py-1.5 font-medium text-zinc-400 relative" style={deviceColWidths.getStyle('battery')}>Bateria <ResizeHandle onMouseDown={(e) => deviceColWidths.handleMouseDown('battery', e)} /></th>}
+                              {visibleDeviceCols.includes('ip') && <th className="px-2 py-1.5 font-medium text-zinc-400 relative" style={deviceColWidths.getStyle('ip')}>IP <ResizeHandle onMouseDown={(e) => deviceColWidths.handleMouseDown('ip', e)} /></th>}
+                              {visibleDeviceCols.includes('macAddress') && <th className="px-2 py-1.5 font-medium text-zinc-400 relative" style={deviceColWidths.getStyle('macAddress')}>MAC <ResizeHandle onMouseDown={(e) => deviceColWidths.handleMouseDown('macAddress', e)} /></th>}
+                              {visibleDeviceCols.includes('purchaseDate') && <th className="px-2 py-1.5 font-medium text-zinc-400 relative" style={deviceColWidths.getStyle('purchaseDate')}>Data Compra <ResizeHandle onMouseDown={(e) => deviceColWidths.handleMouseDown('purchaseDate', e)} /></th>}
+                              {visibleDeviceCols.includes('warrantyExpiry') && <th className="px-2 py-1.5 font-medium text-zinc-400 relative" style={deviceColWidths.getStyle('warrantyExpiry')}>Garantia <ResizeHandle onMouseDown={(e) => deviceColWidths.handleMouseDown('warrantyExpiry', e)} /></th>}
+                              {visibleDeviceCols.includes('devStatus') && <th className="px-2 py-1.5 font-medium text-zinc-400 relative" style={deviceColWidths.getStyle('devStatus')}>Status Ativo <ResizeHandle onMouseDown={(e) => deviceColWidths.handleMouseDown('devStatus', e)} /></th>}
+                              {visibleDeviceCols.includes('healthStatus') && <th className="px-2 py-1.5 font-medium text-zinc-400 relative" style={deviceColWidths.getStyle('healthStatus')}>Condição <ResizeHandle onMouseDown={(e) => deviceColWidths.handleMouseDown('healthStatus', e)} /></th>}
+                              {visibleDeviceCols.includes('notes') && <th className="px-2 py-1.5 font-medium text-zinc-400 relative" style={deviceColWidths.getStyle('notes')}>Observações <ResizeHandle onMouseDown={(e) => deviceColWidths.handleMouseDown('notes', e)} /></th>}
+                              {visibleDeviceCols.includes('lastSeen') && <th className="px-2 py-1.5 font-medium text-zinc-400 relative" style={deviceColWidths.getStyle('lastSeen')}>Atualizado <ResizeHandle onMouseDown={(e) => deviceColWidths.handleMouseDown('lastSeen', e)} /></th>}
+                              {visibleDeviceCols.includes('actions') && <th className="px-2 py-1.5 font-medium text-right text-zinc-400" style={deviceColWidths.getStyle('actions')}>Ações</th>}
                             </tr>
                           </thead>
                           <tbody>
                             {filteredDevices.map((device) => (
                               <tr key={device.id} className="computer-row hover:bg-zinc-900/70 border-t border-zinc-800">
-                                {visibleDeviceCols.includes('status') && <td className="px-2 py-1"><StatusDot lastSeen={device.lastSeen} /></td>}
-                                {visibleDeviceCols.includes('name') && <td className="px-2 py-1 font-medium whitespace-nowrap">{device.name}</td>}
-                                {visibleDeviceCols.includes('manufacturer') && <td className="px-2 py-1 whitespace-nowrap text-zinc-300">{device.manufacturer || '—'}</td>}
-                                {visibleDeviceCols.includes('model') && <td className="px-2 py-1 whitespace-nowrap text-zinc-300">{device.model || '—'}</td>}
-                                {visibleDeviceCols.includes('serialNumber') && <td className="px-2 py-1 font-mono text-[9px] text-zinc-400 whitespace-nowrap">{device.serialNumber || '—'}</td>}
-                                {visibleDeviceCols.includes('assetTag') && <td className="px-2 py-1 text-zinc-300 whitespace-nowrap">{device.assetTag || '—'}</td>}
-                                {visibleDeviceCols.includes('os') && <td className="px-2 py-1 whitespace-nowrap text-zinc-300">{device.os || '—'}</td>}
-                                {visibleDeviceCols.includes('osVersion') && <td className="px-2 py-1 whitespace-nowrap text-zinc-300">{device.osVersion || '—'}</td>}
-                                {visibleDeviceCols.includes('imei') && <td className="px-2 py-1 font-mono text-[9px] text-zinc-400 whitespace-nowrap">{device.imei || '—'}</td>}
-                                {visibleDeviceCols.includes('storage') && <td className="px-2 py-1 whitespace-nowrap">{device.storageGB ? `${device.storageGB} GB` : '—'}</td>}
-                                {visibleDeviceCols.includes('ram') && <td className="px-2 py-1 whitespace-nowrap">{device.ramGB ? `${device.ramGB} GB` : '—'}</td>}
-                                {visibleDeviceCols.includes('phone') && <td className="px-2 py-1 font-mono text-[9px] text-zinc-400 whitespace-nowrap">{device.phoneNumber || '—'}</td>}
+                                {visibleDeviceCols.includes('status') && <td className="px-2 py-1" style={deviceColWidths.getStyle('status')}><StatusDot lastSeen={device.lastSeen} /></td>}
+                                {visibleDeviceCols.includes('name') && <td className="px-2 py-1 font-medium whitespace-nowrap overflow-hidden text-ellipsis" style={deviceColWidths.getStyle('name')} title={device.name}>{device.name}</td>}
+                                {visibleDeviceCols.includes('manufacturer') && <td className="px-2 py-1 whitespace-nowrap overflow-hidden text-ellipsis" style={deviceColWidths.getStyle('manufacturer')} title={device.manufacturer || ''}>{device.manufacturer || '—'}</td>}
+                                {visibleDeviceCols.includes('model') && <td className="px-2 py-1 whitespace-nowrap overflow-hidden text-ellipsis" style={deviceColWidths.getStyle('model')} title={device.model || ''}>{device.model || '—'}</td>}
+                                {visibleDeviceCols.includes('serialNumber') && <td className="px-2 py-1 font-mono text-[9px] text-zinc-400 whitespace-nowrap overflow-hidden text-ellipsis" style={deviceColWidths.getStyle('serialNumber')} title={device.serialNumber || ''}>{device.serialNumber || '—'}</td>}
+                                {visibleDeviceCols.includes('assetTag') && <td className="px-2 py-1 text-zinc-300 whitespace-nowrap overflow-hidden text-ellipsis" style={deviceColWidths.getStyle('assetTag')} title={device.assetTag || ''}>{device.assetTag || '—'}</td>}
+                                {visibleDeviceCols.includes('os') && <td className="px-2 py-1 whitespace-nowrap overflow-hidden text-ellipsis" style={deviceColWidths.getStyle('os')} title={device.os || ''}>{device.os || '—'}</td>}
+                                {visibleDeviceCols.includes('osVersion') && <td className="px-2 py-1 whitespace-nowrap overflow-hidden text-ellipsis" style={deviceColWidths.getStyle('osVersion')} title={device.osVersion || ''}>{device.osVersion || '—'}</td>}
+                                {visibleDeviceCols.includes('imei') && <td className="px-2 py-1 font-mono text-[9px] text-zinc-400 whitespace-nowrap" style={deviceColWidths.getStyle('imei')}>{device.imei || '—'}</td>}
+                                {visibleDeviceCols.includes('storage') && <td className="px-2 py-1 whitespace-nowrap" style={deviceColWidths.getStyle('storage')}>{device.storageGB ? `${device.storageGB} GB` : '—'}</td>}
+                                {visibleDeviceCols.includes('ram') && <td className="px-2 py-1 whitespace-nowrap" style={deviceColWidths.getStyle('ram')}>{device.ramGB ? `${device.ramGB} GB` : '—'}</td>}
+                                {visibleDeviceCols.includes('phone') && <td className="px-2 py-1 font-mono text-[9px] text-zinc-400 whitespace-nowrap" style={deviceColWidths.getStyle('phone')}>{device.phoneNumber || '—'}</td>}
                                 {visibleDeviceCols.includes('battery') && (
-                                  <td className="px-2 py-1 whitespace-nowrap">
+                                  <td className="px-2 py-1 whitespace-nowrap" style={deviceColWidths.getStyle('battery')}>
                                     {device.batteryHealth != null ? (
                                       <span className={device.batteryHealth <= 20 ? 'text-red-400' : device.batteryHealth <= 50 ? 'text-amber-400' : 'text-zinc-300'}>
                                         {device.batteryHealth}%
@@ -1041,12 +1084,12 @@ export default function PCPortfolio() {
                                     ) : '—'}
                                   </td>
                                 )}
-                                {visibleDeviceCols.includes('ip') && <td className="px-2 py-1 font-mono text-[9px] text-zinc-400 whitespace-nowrap">{device.ipAddress || '—'}</td>}
-                                {visibleDeviceCols.includes('macAddress') && <td className="px-2 py-1 font-mono text-[9px] text-zinc-400 whitespace-nowrap">{device.macAddress || '—'}</td>}
-                                {visibleDeviceCols.includes('purchaseDate') && <td className="px-2 py-1 text-[9px] text-zinc-400 whitespace-nowrap">{formatDateOnly(device.purchaseDate)}</td>}
-                                {visibleDeviceCols.includes('warrantyExpiry') && <td className="px-2 py-1 text-[9px] text-zinc-400 whitespace-nowrap">{formatDateOnly(device.warrantyExpiry)}</td>}
+                                {visibleDeviceCols.includes('ip') && <td className="px-2 py-1 font-mono text-[9px] text-zinc-400 whitespace-nowrap" style={deviceColWidths.getStyle('ip')}>{device.ipAddress || '—'}</td>}
+                                {visibleDeviceCols.includes('macAddress') && <td className="px-2 py-1 font-mono text-[9px] text-zinc-400 whitespace-nowrap" style={deviceColWidths.getStyle('macAddress')}>{device.macAddress || '—'}</td>}
+                                {visibleDeviceCols.includes('purchaseDate') && <td className="px-2 py-1 text-[9px] text-zinc-400 whitespace-nowrap" style={deviceColWidths.getStyle('purchaseDate')}>{formatDateOnly(device.purchaseDate)}</td>}
+                                {visibleDeviceCols.includes('warrantyExpiry') && <td className="px-2 py-1 text-[9px] text-zinc-400 whitespace-nowrap" style={deviceColWidths.getStyle('warrantyExpiry')}>{formatDateOnly(device.warrantyExpiry)}</td>}
                                 {visibleDeviceCols.includes('devStatus') && (
-                                  <td className="px-2 py-1 whitespace-nowrap">
+                                  <td className="px-2 py-1 whitespace-nowrap" style={deviceColWidths.getStyle('devStatus')}>
                                     <span className={`text-[9px] px-1.5 py-0.5 rounded-full ${
                                       device.status === 'active' ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/20' :
                                       device.status === 'maintenance' ? 'bg-amber-500/15 text-amber-400 border border-amber-500/20' :
@@ -1060,7 +1103,7 @@ export default function PCPortfolio() {
                                   </td>
                                 )}
                                 {visibleDeviceCols.includes('healthStatus') && (
-                                  <td className="px-2 py-1 whitespace-nowrap">
+                                  <td className="px-2 py-1 whitespace-nowrap" style={deviceColWidths.getStyle('healthStatus')}>
                                     <span className={`text-[9px] px-1.5 py-0.5 rounded-full font-medium ${
                                       device.healthStatus === 'ok' ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/20' :
                                       device.healthStatus === 'attention' ? 'bg-amber-500/15 text-amber-400 border border-amber-500/20' :
@@ -1070,8 +1113,8 @@ export default function PCPortfolio() {
                                     </span>
                                   </td>
                                 )}
-                                {visibleDeviceCols.includes('notes') && <td className="px-2 py-1 text-[9px] text-zinc-400 max-w-[200px] truncate" title={device.notes || ''}>{device.notes || '—'}</td>}
-                                {visibleDeviceCols.includes('lastSeen') && <td className="px-2 py-1 text-[9px] text-zinc-400 whitespace-nowrap">{formatDate(device.lastSeen)}</td>}
+                                {visibleDeviceCols.includes('notes') && <td className="px-2 py-1 text-[9px] text-zinc-400 overflow-hidden text-ellipsis whitespace-nowrap" style={deviceColWidths.getStyle('notes')} title={device.notes || ''}>{device.notes || '—'}</td>}
+                                {visibleDeviceCols.includes('lastSeen') && <td className="px-2 py-1 text-[9px] text-zinc-400 whitespace-nowrap" style={deviceColWidths.getStyle('lastSeen')}>{formatDate(device.lastSeen)}</td>}
                                 {visibleDeviceCols.includes('actions') && (
                                   <td className="px-2 py-1 text-right">
                                     <div className="flex gap-0.5 justify-end">
@@ -1100,6 +1143,45 @@ export default function PCPortfolio() {
           <div className="modal card w-full max-w-md p-6 shadow-2xl shadow-black/50" onClick={e => e.stopPropagation()}>
             <h3 className="text-xl font-semibold mb-1">{editingCompany ? 'Editar Empresa' : 'Nova Empresa'}</h3>
             <div className="space-y-4 mt-5">
+              <div className="flex items-center gap-4">
+                <div className="flex-shrink-0">
+                  {formData.logo ? (
+                    <img src={formData.logo} alt="Logo" className="h-16 w-16 rounded-xl object-cover border border-zinc-700" />
+                  ) : (
+                    <div className="h-16 w-16 rounded-xl bg-zinc-800 border border-zinc-700 flex items-center justify-center">
+                      <Image className="h-6 w-6 text-zinc-500" />
+                    </div>
+                  )}
+                </div>
+                <div className="flex-1">
+                  <label className="text-sm font-medium text-zinc-400 block mb-1.5">Logo da Empresa</label>
+                  <label className="btn btn-secondary text-xs cursor-pointer flex items-center gap-2 w-fit">
+                    <Image className="h-3.5 w-3.5" />
+                    {formData.logo ? 'Trocar logo' : 'Selecionar imagem'}
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (!file) return;
+                        if (file.size > 500 * 1024) {
+                          toast.error('Imagem deve ter no máximo 500KB');
+                          return;
+                        }
+                        const reader = new FileReader();
+                        reader.onload = () => setFormData({ ...formData, logo: reader.result as string });
+                        reader.readAsDataURL(file);
+                      }}
+                    />
+                  </label>
+                  {formData.logo && (
+                    <button onClick={() => setFormData({ ...formData, logo: '' })} className="text-xs text-red-400 hover:text-red-300 mt-1 ml-2">
+                      Remover
+                    </button>
+                  )}
+                </div>
+              </div>
               <div>
                 <label className="text-sm font-medium text-zinc-400 block mb-1.5">Nome da empresa</label>
                 <input value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} placeholder="Ex: Empresa ABC Ltda" className="w-full" />

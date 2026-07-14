@@ -12,6 +12,7 @@ model Company {
   name      String
   apiKey    String      @unique @default(cuid())
   contact   String?
+  logo      String?
   createdAt DateTime    @default(now())
   updatedAt DateTime    @updatedAt
   computers Computer[]

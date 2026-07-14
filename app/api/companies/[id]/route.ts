@@ -37,13 +37,14 @@ export async function PUT(
 ) {
   try {
     const { id } = await params;
-    const { name, contact } = await request.json();
+    const { name, contact, logo } = await request.json();
 
     const company = await prisma.company.update({
       where: { id },
       data: {
         name: name?.trim(),
         contact: contact?.trim() || null,
+        logo: logo !== undefined ? (logo || null) : undefined,
       },
       include: {
         _count: { select: { computers: true } }
