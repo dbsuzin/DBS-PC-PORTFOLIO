@@ -4,8 +4,13 @@ import React, { useState, useEffect } from 'react';
 import { 
   Monitor, Building2, AlertTriangle, 
   ChevronRight, Activity, X, ExternalLink, Smartphone,
-  Server, Cpu
+  Server, Cpu, ChevronDown
 } from 'lucide-react';
+
+interface Company {
+  id: string;
+  name: string;
+}
 
 interface Stats {
   totalCompanies: number;
@@ -14,17 +19,12 @@ interface Stats {
   online: number;
   stale: number;
   offline: number;
-  devicesOnline: number;
-  devicesStale: number;
-  devicesOffline: number;
   lowDisk: number;
   warrantyExpiring: number;
   deviceWarrantyExpiring: number;
   osDistribution: { os: string; count: number }[];
   deviceOsDistribution: { os: string; count: number }[];
   ramDistribution: { ram: number; count: number }[];
-  statusDistribution: { status: string; count: number }[];
-  deviceStatusDistribution: { status: string; count: number }[];
   recentComputers: { hostname: string; lastSeen: string; manufacturer: string | null; model: string | null }[];
   recentDevices: { name: string; lastSeen: string; manufacturer: string | null; model: string | null }[];
 }
@@ -74,14 +74,37 @@ export default function Dashboard({ onSelectCompany }: DashboardProps) {
   const [filteredGroups, setFilteredGroups] = useState<FilterGroup[]>([]);
   const [filteredTotal, setFilteredTotal] = useState(0);
   const [loadingFilter, setLoadingFilter] = useState(false);
+  const [companies, setCompanies] = useState<Company[]>([]);
+  const [selectedCompanyId, setSelectedCompanyId] = useState<string>('');
+  const [showCompanyDropdown, setShowCompanyDropdown] = useState(false);
+
+  useEffect(() => {
+    fetchCompanies();
+  }, []);
 
   useEffect(() => {
     fetchStats();
-  }, []);
+  }, [selectedCompanyId]);
+
+  const fetchCompanies = async () => {
+    try {
+      const res = await fetch('/api/companies');
+      if (res.ok) {
+        const data = await res.json();
+        setCompanies(data);
+      }
+    } catch (error) {
+      console.error('Error fetching companies:', error);
+    }
+  };
 
   const fetchStats = async () => {
     try {
-      const res = await fetch('/api/stats');
+      setIsLoading(true);
+      const url = selectedCompanyId
+        ? `/api/stats?companyId=${selectedCompanyId}`
+        : '/api/stats';
+      const res = await fetch(url);
       if (res.ok) {
         setStats(await res.json());
       }
@@ -99,7 +122,10 @@ export default function Dashboard({ onSelectCompany }: DashboardProps) {
     setFilteredGroups([]);
 
     try {
-      const res = await fetch(`/api/stats/filtered?filter=${filter}`);
+      const url = selectedCompanyId
+        ? `/api/stats/filtered?filter=${filter}&companyId=${selectedCompanyId}`
+        : `/api/stats/filtered?filter=${filter}`;
+      const res = await fetch(url);
       if (res.ok) {
         const data = await res.json();
         setFilteredGroups(data.groups || []);
@@ -130,7 +156,9 @@ export default function Dashboard({ onSelectCompany }: DashboardProps) {
     return `${diffDays}d atrás`;
   };
 
-  if (isLoading) {
+  const selectedCompany = companies.find(c => c.id === selectedCompanyId);
+
+  if (isLoading && !stats) {
     return (
       <div className="flex items-center justify-center py-20">
         <Activity className="h-6 w-6 text-sky-400 animate-pulse" />
@@ -140,7 +168,7 @@ export default function Dashboard({ onSelectCompany }: DashboardProps) {
 
   if (!stats) return null;
 
-  const totalProblems = stats.stale + stats.offline + stats.lowDisk + stats.warrantyExpiring + stats.devicesStale + stats.devicesOffline + stats.deviceWarrantyExpiring;
+  const totalProblems = stats.stale + stats.offline + stats.lowDisk + stats.warrantyExpiring;
 
   return (
     <div className="p-6 space-y-8 overflow-auto flex-1 tech-grid">
@@ -152,12 +180,73 @@ export default function Dashboard({ onSelectCompany }: DashboardProps) {
           </div>
           <div>
             <h2 className="text-2xl font-bold glow-text text-zinc-100">Dashboard</h2>
-            <p className="text-sm text-zinc-400">{stats.totalCompanies} empresas cadastradas</p>
+            <p className="text-sm text-zinc-400">
+              {selectedCompany
+                ? `Filtrando: ${selectedCompany.name}`
+                : `${stats.totalCompanies} empresas cadastradas`}
+            </p>
           </div>
         </div>
-        <button onClick={fetchStats} className="btn btn-secondary text-sm">
-          Atualizar
-        </button>
+        <div className="flex items-center gap-3">
+          {/* Company Filter Dropdown */}
+          <div className="relative">
+            <button
+              onClick={() => setShowCompanyDropdown(!showCompanyDropdown)}
+              className="btn btn-secondary text-sm flex items-center gap-2 min-w-[180px] justify-between"
+            >
+              <div className="flex items-center gap-2 min-w-0">
+                <Building2 className="h-4 w-4 text-zinc-400 flex-shrink-0" />
+                <span className="truncate text-xs">
+                  {selectedCompany ? selectedCompany.name : 'Todas as empresas'}
+                </span>
+              </div>
+              <ChevronDown className={`h-3.5 w-3.5 text-zinc-400 transition-transform ${showCompanyDropdown ? 'rotate-180' : ''}`} />
+            </button>
+
+            {showCompanyDropdown && (
+              <>
+                <div className="fixed inset-0 z-40" onClick={() => setShowCompanyDropdown(false)} />
+                <div className="absolute right-0 top-full mt-1 w-64 max-h-60 overflow-auto rounded-xl bg-zinc-900 border border-zinc-700/50 shadow-2xl shadow-black/50 z-50">
+                  <button
+                    onClick={() => {
+                      setSelectedCompanyId('');
+                      setShowCompanyDropdown(false);
+                    }}
+                    className={`w-full text-left px-3 py-2.5 text-xs flex items-center gap-2 transition-colors ${
+                      !selectedCompanyId
+                        ? 'bg-sky-500/10 text-sky-400'
+                        : 'text-zinc-300 hover:bg-zinc-800'
+                    }`}
+                  >
+                    <Building2 className="h-3.5 w-3.5 text-zinc-500" />
+                    Todas as empresas
+                  </button>
+                  {companies.map((company) => (
+                    <button
+                      key={company.id}
+                      onClick={() => {
+                        setSelectedCompanyId(company.id);
+                        setShowCompanyDropdown(false);
+                      }}
+                      className={`w-full text-left px-3 py-2.5 text-xs flex items-center gap-2 transition-colors ${
+                        selectedCompanyId === company.id
+                          ? 'bg-sky-500/10 text-sky-400'
+                          : 'text-zinc-300 hover:bg-zinc-800'
+                      }`}
+                    >
+                      <Building2 className="h-3.5 w-3.5 text-zinc-500" />
+                      <span className="truncate">{company.name}</span>
+                    </button>
+                  ))}
+                </div>
+              </>
+            )}
+          </div>
+
+          <button onClick={fetchStats} className="btn btn-secondary text-sm">
+            Atualizar
+          </button>
+        </div>
       </div>
 
       {/* Stat Cards */}
@@ -343,7 +432,10 @@ export default function Dashboard({ onSelectCompany }: DashboardProps) {
                 </div>
                 <div>
                   <h3 className="text-lg font-bold text-zinc-100">{FILTER_LABELS[activeFilter].title}</h3>
-                  <p className="text-xs text-zinc-500">{filteredTotal} itens com problemas</p>
+                  <p className="text-xs text-zinc-500">
+                    {filteredTotal} itens com problemas
+                    {selectedCompany && ` — ${selectedCompany.name}`}
+                  </p>
                 </div>
               </div>
               <button onClick={() => setActiveFilter(null)} className="h-8 w-8 rounded-lg bg-zinc-800/50 flex items-center justify-center hover:bg-zinc-700/50 transition-colors">
@@ -372,7 +464,6 @@ export default function Dashboard({ onSelectCompany }: DashboardProps) {
                       <span className="font-semibold text-sm text-zinc-200">{group.company.name}</span>
                       <span className="text-xs text-zinc-500 bg-zinc-800/50 px-2 py-0.5 rounded-full">
                         {group.computers.length} PC{group.computers.length > 1 ? 's' : ''}
-                        {group.devices.length > 0 ? `, ${group.devices.length} Aparelho${group.devices.length > 1 ? 's' : ''}` : ''}
                       </span>
                       <ExternalLink className="h-3 w-3 text-zinc-600 group-hover/company:text-sky-400 transition-colors" />
                     </button>
@@ -399,29 +490,6 @@ export default function Dashboard({ onSelectCompany }: DashboardProps) {
                               <span className="text-yellow-400/80 text-[10px]">{new Date(comp.warrantyExpiry).toLocaleDateString('pt-BR')}</span>
                             )}
                             <span className="text-[10px]">{formatLastSeen(comp.lastSeen)}</span>
-                            <ChevronRight className="h-3 w-3 opacity-0 group-hover/row:opacity-100 transition-opacity" />
-                          </div>
-                        </button>
-                      ))}
-                      {group.devices.map((device) => (
-                        <button
-                          key={device.id}
-                          onClick={() => handleSelectComputer(group.company.id)}
-                          className="w-full recent-item text-left group/row"
-                        >
-                          <div className="flex items-center gap-3 min-w-0">
-                            <div className="h-6 w-6 rounded-md bg-purple-500/10 flex items-center justify-center flex-shrink-0">
-                              <Smartphone className="h-3 w-3 text-purple-400" />
-                            </div>
-                            <span className="font-medium text-xs text-zinc-200 truncate">{device.name}</span>
-                            <span className="text-zinc-500 text-[10px] truncate hidden sm:inline">{device.manufacturer} {device.model}</span>
-                            {device.ipAddress && <span className="font-mono text-zinc-600 text-[10px] hidden md:inline">{device.ipAddress}</span>}
-                          </div>
-                          <div className="flex items-center gap-2 text-zinc-500 flex-shrink-0">
-                            {device.warrantyExpiry && (
-                              <span className="text-yellow-400/80 text-[10px]">{new Date(device.warrantyExpiry).toLocaleDateString('pt-BR')}</span>
-                            )}
-                            <span className="text-[10px]">{formatLastSeen(device.lastSeen)}</span>
                             <ChevronRight className="h-3 w-3 opacity-0 group-hover/row:opacity-100 transition-opacity" />
                           </div>
                         </button>

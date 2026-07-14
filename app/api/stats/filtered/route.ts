@@ -5,10 +5,13 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const filter = searchParams.get('filter');
+    const companyId = searchParams.get('companyId');
 
     if (!filter) {
       return NextResponse.json({ error: 'filter inválido' }, { status: 400 });
     }
+
+    const companyFilter: any = companyId ? { companyId } : {};
 
     const now = new Date();
     const oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
@@ -18,6 +21,7 @@ export async function GET(request: NextRequest) {
     if (filter === 'problems') {
       const computers = await prisma.computer.findMany({
         where: {
+          ...companyFilter,
           OR: [
             { lastSeen: { gte: oneDayAgo, lt: sevenDaysAgo } },
             { lastSeen: { lt: sevenDaysAgo } },
@@ -31,93 +35,36 @@ export async function GET(request: NextRequest) {
         orderBy: { lastSeen: 'desc' },
       });
 
-      const devices = await prisma.device.findMany({
-        where: {
-          OR: [
-            { lastSeen: { gte: oneDayAgo, lt: sevenDaysAgo } },
-            { lastSeen: { lt: sevenDaysAgo } },
-            { warrantyExpiry: { gte: now, lte: ninetyDaysLater } },
-          ],
-        },
-        include: {
-          company: { select: { id: true, name: true } },
-        },
-        orderBy: { lastSeen: 'desc' },
-      });
-
-      const grouped: Record<string, { company: { id: string; name: string }; computers: typeof computers; devices: typeof devices }> = {};
+      const grouped: Record<string, { company: { id: string; name: string }; computers: typeof computers; devices: any[] }> = {};
 
       for (const comp of computers) {
-        const companyId = comp.companyId;
-        if (!grouped[companyId]) {
-          grouped[companyId] = { company: comp.company, computers: [], devices: [] };
+        const cid = comp.companyId;
+        if (!grouped[cid]) {
+          grouped[cid] = { company: comp.company, computers: [], devices: [] };
         }
-        grouped[companyId].computers.push(comp);
+        grouped[cid].computers.push(comp);
       }
 
-      for (const dev of devices) {
-        const companyId = dev.companyId;
-        if (!grouped[companyId]) {
-          grouped[companyId] = { company: dev.company, computers: [], devices: [] };
-        }
-        grouped[companyId].devices.push(dev);
-      }
-
-      return NextResponse.json({ filter, total: computers.length + devices.length, groups: Object.values(grouped) });
+      return NextResponse.json({ filter, total: computers.length, groups: Object.values(grouped) });
     }
 
-    const deviceFilters: Record<string, any> = {
-      'devicesOnline': { lastSeen: { gte: oneDayAgo } },
-      'devicesStale': { lastSeen: { gte: sevenDaysAgo, lt: oneDayAgo } },
-      'devicesOffline': { lastSeen: { lt: sevenDaysAgo } },
-      'deviceWarranty': {
-        warrantyExpiry: {
-          gte: now,
-          lte: new Date(now.getTime() + 90 * 24 * 60 * 60 * 1000),
-        },
-      },
-    };
-
-    if (deviceFilters[filter]) {
-      const devices = await prisma.device.findMany({
-        where: deviceFilters[filter],
-        include: {
-          company: { select: { id: true, name: true } },
-        },
-        orderBy: { lastSeen: 'desc' },
-      });
-
-      const grouped: Record<string, { company: { id: string; name: string }; computers: any[]; devices: typeof devices }> = {};
-      for (const dev of devices) {
-        const companyId = dev.companyId;
-        if (!grouped[companyId]) {
-          grouped[companyId] = { company: dev.company, computers: [], devices: [] };
-        }
-        grouped[companyId].devices.push(dev);
-      }
-
-      return NextResponse.json({ filter, total: devices.length, groups: Object.values(grouped) });
-    }
-
-    let where: any = {};
+    let where: any = { ...companyFilter };
 
     if (filter === 'offline') {
-      where = { lastSeen: { lt: sevenDaysAgo } };
+      where.lastSeen = { lt: sevenDaysAgo };
     } else if (filter === 'stale') {
-      where = { lastSeen: { gte: oneDayAgo, lt: sevenDaysAgo } };
+      where.lastSeen = { gte: oneDayAgo, lt: sevenDaysAgo };
     } else if (filter === 'warranty') {
-      where = {
-        warrantyExpiry: {
-          gte: now,
-          lte: new Date(now.getTime() + 90 * 24 * 60 * 60 * 1000),
-        },
+      where.warrantyExpiry = {
+        gte: now,
+        lte: ninetyDaysLater,
       };
     } else if (filter === 'lowDisk') {
-      where = { disks: { contains: 'GB livre' } };
+      where.disks = { contains: 'GB livre' };
     } else if (filter === 'online') {
-      where = { lastSeen: { gte: oneDayAgo } };
+      where.lastSeen = { gte: oneDayAgo };
     } else if (filter === 'all') {
-      where = {};
+      // keep just companyFilter
     } else {
       return NextResponse.json({ error: 'filter inválido' }, { status: 400 });
     }
@@ -133,11 +80,11 @@ export async function GET(request: NextRequest) {
     const grouped: Record<string, { company: { id: string; name: string }; computers: typeof computers; devices: any[] }> = {};
 
     for (const comp of computers) {
-      const companyId = comp.companyId;
-      if (!grouped[companyId]) {
-        grouped[companyId] = { company: comp.company, computers: [], devices: [] };
+      const cid = comp.companyId;
+      if (!grouped[cid]) {
+        grouped[cid] = { company: comp.company, computers: [], devices: [] };
       }
-      grouped[companyId].computers.push(comp);
+      grouped[cid].computers.push(comp);
     }
 
     return NextResponse.json({ filter, total: computers.length, groups: Object.values(grouped) });

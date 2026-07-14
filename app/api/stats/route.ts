@@ -1,8 +1,16 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
+    const { searchParams } = new URL(request.url);
+    const companyId = searchParams.get('companyId');
+
+    const where: any = {};
+    if (companyId) {
+      where.companyId = companyId;
+    }
+
     const now = new Date();
     const oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
     const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
@@ -14,59 +22,48 @@ export async function GET() {
       onlineCount,
       staleCount,
       offlineCount,
-      devicesOnlineCount,
-      devicesStaleCount,
-      devicesOfflineCount,
       lowDiskCount,
       osDistribution,
       deviceOsDistribution,
       ramDistribution,
-      statusDistribution,
-      deviceStatusDistribution,
       recentComputers,
       recentDevices,
     ] = await Promise.all([
       prisma.company.count(),
-      prisma.computer.count(),
-      prisma.device.count(),
-      prisma.computer.count({ where: { lastSeen: { gte: oneDayAgo } } }),
-      prisma.computer.count({ where: { lastSeen: { gte: sevenDaysAgo, lt: oneDayAgo } } }),
-      prisma.computer.count({ where: { lastSeen: { lt: sevenDaysAgo } } }),
-      prisma.device.count({ where: { lastSeen: { gte: oneDayAgo } } }),
-      prisma.device.count({ where: { lastSeen: { gte: sevenDaysAgo, lt: oneDayAgo } } }),
-      prisma.device.count({ where: { lastSeen: { lt: sevenDaysAgo } } }),
-      prisma.computer.count({ where: { disks: { contains: 'GB livre' } } }).catch(() => 0),
+      prisma.computer.count({ where }),
+      prisma.device.count({ where }),
+      prisma.computer.count({ where: { ...where, lastSeen: { gte: oneDayAgo } } }),
+      prisma.computer.count({ where: { ...where, lastSeen: { gte: sevenDaysAgo, lt: oneDayAgo } } }),
+      prisma.computer.count({ where: { ...where, lastSeen: { lt: sevenDaysAgo } } }),
+      prisma.computer.count({ where: { ...where, disks: { contains: 'GB livre' } } }).catch(() => 0),
       prisma.computer.groupBy({
         by: ['os'],
+        where,
         _count: { os: true },
         orderBy: { _count: { os: 'desc' } },
         take: 5,
       }),
       prisma.device.groupBy({
         by: ['os'],
+        where,
         _count: { os: true },
         orderBy: { _count: { os: 'desc' } },
         take: 5,
       }),
       prisma.computer.groupBy({
         by: ['ramGB'],
+        where,
         _count: { ramGB: true },
         orderBy: { ramGB: 'asc' },
       }),
-      prisma.computer.groupBy({
-        by: ['status'],
-        _count: { status: true },
-      }),
-      prisma.device.groupBy({
-        by: ['status'],
-        _count: { status: true },
-      }),
       prisma.computer.findMany({
+        where,
         orderBy: { lastSeen: 'desc' },
         take: 5,
         select: { hostname: true, lastSeen: true, manufacturer: true, model: true },
       }),
       prisma.device.findMany({
+        where,
         orderBy: { lastSeen: 'desc' },
         take: 5,
         select: { name: true, lastSeen: true, manufacturer: true, model: true },
@@ -75,12 +72,14 @@ export async function GET() {
 
     const warrantyExpiring = await prisma.computer.count({
       where: {
+        ...where,
         warrantyExpiry: { gte: now, lte: new Date(now.getTime() + 90 * 24 * 60 * 60 * 1000) },
       },
     }).catch(() => 0);
 
     const deviceWarrantyExpiring = await prisma.device.count({
       where: {
+        ...where,
         warrantyExpiry: { gte: now, lte: new Date(now.getTime() + 90 * 24 * 60 * 60 * 1000) },
       },
     }).catch(() => 0);
@@ -92,9 +91,6 @@ export async function GET() {
       online: onlineCount,
       stale: staleCount,
       offline: offlineCount,
-      devicesOnline: devicesOnlineCount,
-      devicesStale: devicesStaleCount,
-      devicesOffline: devicesOfflineCount,
       lowDisk: lowDiskCount,
       warrantyExpiring,
       deviceWarrantyExpiring,
@@ -111,8 +107,6 @@ export async function GET() {
         }, [])
         .sort((a, b) => a.ram - b.ram)
         .slice(0, 6),
-      statusDistribution: statusDistribution.map(s => ({ status: s.status || 'active', count: s._count.status })),
-      deviceStatusDistribution: deviceStatusDistribution.map(s => ({ status: s.status || 'active', count: s._count.status })),
       recentComputers,
       recentDevices,
     });
