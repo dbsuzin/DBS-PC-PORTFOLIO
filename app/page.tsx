@@ -152,7 +152,7 @@ export default function PCPortfolio() {
   const [showColConfig, setShowColConfig] = useState<'computers' | 'devices' | null>(null);
 
   const defaultComputerCols = ['status','hostname','manufacturer','cpu','ram','disks','os','ip','healthStatus','notes','lastSeen','actions'];
-  const defaultDeviceCols = ['status','name','manufacturer','os','imei','storage','ram','phone','devStatus','healthStatus','lastSeen','actions'];
+  const defaultDeviceCols = ['name','manufacturer','os','imei','storage','ram','phone','devStatus','healthStatus','lastSeen','actions'];
 
   const [visibleComputerCols, setVisibleComputerCols] = useState<string[]>(() => {
     if (typeof window !== 'undefined') {
@@ -201,7 +201,7 @@ export default function PCPortfolio() {
   const deviceColWidths = useResizableColumns({
     storageKey: 'pc-portfolio-device-col-widths',
     defaultWidths: {
-      status: 30, name: 130, manufacturer: 100, model: 100, serialNumber: 110,
+      name: 130, manufacturer: 100, model: 100, serialNumber: 110,
       assetTag: 80, os: 80, osVersion: 80, imei: 120, storage: 80,
       ram: 60, phone: 100, ip: 100, macAddress: 120,
       purchaseDate: 90, warrantyExpiry: 90, devStatus: 90, healthStatus: 70,
@@ -869,7 +869,6 @@ export default function PCPortfolio() {
                       ) : (
                         <div className="space-y-1">
                           {[
-                            { key: 'status', label: 'Status Conexão' },
                             { key: 'name', label: 'Nome' },
                             { key: 'manufacturer', label: 'Fabricante' },
                             { key: 'model', label: 'Modelo' },
@@ -1029,7 +1028,6 @@ export default function PCPortfolio() {
                         <table className="w-full text-[10px]">
                           <thead>
                             <tr className="text-left">
-                              {visibleDeviceCols.includes('status') && <th className="px-2 py-1.5 font-medium text-zinc-400 relative" style={deviceColWidths.getStyle('status')}> <ResizeHandle onMouseDown={(e) => deviceColWidths.handleMouseDown('status', e)} /></th>}
                               {visibleDeviceCols.includes('name') && <th className="px-2 py-1.5 font-medium text-zinc-400 relative" style={deviceColWidths.getStyle('name')}>Nome <ResizeHandle onMouseDown={(e) => deviceColWidths.handleMouseDown('name', e)} /></th>}
                               {visibleDeviceCols.includes('manufacturer') && <th className="px-2 py-1.5 font-medium text-zinc-400 relative" style={deviceColWidths.getStyle('manufacturer')}>Fabricante <ResizeHandle onMouseDown={(e) => deviceColWidths.handleMouseDown('manufacturer', e)} /></th>}
                               {visibleDeviceCols.includes('model') && <th className="px-2 py-1.5 font-medium text-zinc-400 relative" style={deviceColWidths.getStyle('model')}>Modelo <ResizeHandle onMouseDown={(e) => deviceColWidths.handleMouseDown('model', e)} /></th>}
@@ -1055,7 +1053,6 @@ export default function PCPortfolio() {
                           <tbody>
                             {filteredDevices.map((device) => (
                               <tr key={device.id} className="computer-row hover:bg-zinc-900/70 border-t border-zinc-800">
-                                {visibleDeviceCols.includes('status') && <td className="px-2 py-1" style={deviceColWidths.getStyle('status')}><StatusDot lastSeen={device.lastSeen} /></td>}
                                 {visibleDeviceCols.includes('name') && <td className="px-2 py-1 font-medium whitespace-nowrap overflow-hidden text-ellipsis" style={deviceColWidths.getStyle('name')} title={device.name}>{device.name}</td>}
                                 {visibleDeviceCols.includes('manufacturer') && <td className="px-2 py-1 whitespace-nowrap overflow-hidden text-ellipsis" style={deviceColWidths.getStyle('manufacturer')} title={device.manufacturer || ''}>{device.manufacturer || '—'}</td>}
                                 {visibleDeviceCols.includes('model') && <td className="px-2 py-1 whitespace-nowrap overflow-hidden text-ellipsis" style={deviceColWidths.getStyle('model')} title={device.model || ''}>{device.model || '—'}</td>}
