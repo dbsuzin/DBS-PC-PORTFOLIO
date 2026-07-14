@@ -3,7 +3,8 @@
 import React, { useState, useEffect } from 'react';
 import { 
   Monitor, Building2, AlertTriangle, 
-  ChevronRight, Activity, X, ExternalLink, Smartphone
+  ChevronRight, Activity, X, ExternalLink, Smartphone,
+  Server, Cpu
 } from 'lucide-react';
 
 interface Stats {
@@ -141,109 +142,161 @@ export default function Dashboard({ onSelectCompany }: DashboardProps) {
 
   const totalProblems = stats.stale + stats.offline + stats.lowDisk + stats.warrantyExpiring + stats.devicesStale + stats.devicesOffline + stats.deviceWarrantyExpiring;
 
-  const statCards = [
-    { label: 'Total Computadores', value: stats.totalComputers, filter: 'all', icon: Monitor, color: 'text-sky-400', bg: 'bg-sky-500/10' },
-    { label: 'Total Aparelhos', value: stats.totalDevices, filter: 'all', icon: Smartphone, color: 'text-purple-400', bg: 'bg-purple-500/10' },
-    { label: 'Problemas', value: totalProblems, filter: 'problems', icon: AlertTriangle, color: 'text-red-400', bg: 'bg-red-500/10' },
-  ];
-
   return (
-    <div className="p-6 space-y-6 overflow-auto flex-1 tech-grid">
+    <div className="p-6 space-y-8 overflow-auto flex-1 tech-grid">
+      {/* Header */}
       <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-semibold glow-text">Dashboard</h2>
-          <p className="text-sm text-zinc-400">{stats.totalCompanies} empresas cadastradas</p>
+        <div className="flex items-center gap-4">
+          <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-sky-500 to-cyan-400 flex items-center justify-center shadow-lg shadow-sky-500/20">
+            <Cpu className="h-5 w-5 text-white" />
+          </div>
+          <div>
+            <h2 className="text-2xl font-bold glow-text text-zinc-100">Dashboard</h2>
+            <p className="text-sm text-zinc-400">{stats.totalCompanies} empresas cadastradas</p>
+          </div>
         </div>
         <button onClick={fetchStats} className="btn btn-secondary text-sm">
           Atualizar
         </button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        {statCards.map((card) => (
-          <div
-            key={card.label}
-            onClick={() => handleCardClick(card.filter)}
-            className={`card p-4 text-center transition-all hover:border-sky-500/30 hover:shadow-lg hover:shadow-sky-500/5 cursor-pointer ${activeFilter === card.filter ? 'border-sky-500/40 shadow-lg shadow-sky-500/10' : ''}`}
-          >
-            <div className={`mx-auto mb-2 h-8 w-8 flex items-center justify-center rounded-lg ${card.bg}`}>
-              <card.icon className={`h-4 w-4 ${card.color}`} />
+      {/* Stat Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+        <div
+          onClick={() => handleCardClick('all')}
+          className="card stat-card stat-card-blue p-5 cursor-pointer group"
+        >
+          <div className="flex items-center justify-between mb-4">
+            <div className="h-10 w-10 rounded-xl bg-sky-500/15 flex items-center justify-center group-hover:bg-sky-500/25 transition-colors">
+              <Monitor className="h-5 w-5 text-sky-400" />
             </div>
-            <div className="text-2xl font-bold">{card.value}</div>
-            <div className="text-[10px] text-zinc-400 mt-1">{card.label}</div>
+            <span className="text-xs font-medium text-sky-400/80 bg-sky-500/10 px-2.5 py-1 rounded-full">Computadores</span>
           </div>
-        ))}
+          <div className="text-4xl font-bold text-zinc-100 mb-1">{stats.totalComputers}</div>
+          <div className="text-sm text-zinc-400">Total de computadores</div>
+        </div>
+
+        <div
+          onClick={() => handleCardClick('all')}
+          className="card stat-card stat-card-purple p-5 cursor-pointer group"
+        >
+          <div className="flex items-center justify-between mb-4">
+            <div className="h-10 w-10 rounded-xl bg-purple-500/15 flex items-center justify-center group-hover:bg-purple-500/25 transition-colors">
+              <Smartphone className="h-5 w-5 text-purple-400" />
+            </div>
+            <span className="text-xs font-medium text-purple-400/80 bg-purple-500/10 px-2.5 py-1 rounded-full">Aparelhos</span>
+          </div>
+          <div className="text-4xl font-bold text-zinc-100 mb-1">{stats.totalDevices}</div>
+          <div className="text-sm text-zinc-400">Total de dispositivos</div>
+        </div>
+
+        <div
+          onClick={() => handleCardClick('problems')}
+          className="card stat-card stat-card-red p-5 cursor-pointer group"
+        >
+          <div className="flex items-center justify-between mb-4">
+            <div className="h-10 w-10 rounded-xl bg-red-500/15 flex items-center justify-center group-hover:bg-red-500/25 transition-colors">
+              <AlertTriangle className="h-5 w-5 text-red-400" />
+            </div>
+            <span className="text-xs font-medium text-red-400/80 bg-red-500/10 px-2.5 py-1 rounded-full">Atenção</span>
+          </div>
+          <div className="text-4xl font-bold text-zinc-100 mb-1">{totalProblems}</div>
+          <div className="text-sm text-zinc-400">Problemas encontrados</div>
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="card p-4">
-          <h3 className="text-sm font-medium text-zinc-300 mb-3">Distribuição por SO</h3>
-          <div className="space-y-2">
+      {/* Distribution Panels */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+        <div className="card p-5">
+          <div className="section-header">
+            <Server className="h-4 w-4 text-sky-400" />
+            <h3 className="text-sm font-semibold text-zinc-200">Distribuição por SO</h3>
+          </div>
+          <div className="space-y-3">
             {stats.osDistribution.slice(0, 5).map((item) => (
-              <div key={item.os} className="flex items-center gap-2 text-xs">
-                <div className="flex-1 truncate text-zinc-400">{item.os}</div>
-                <div className="w-20 h-1.5 bg-zinc-800 rounded-full overflow-hidden">
+              <div key={item.os} className="space-y-1.5">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-zinc-300 font-medium">{item.os}</span>
+                  <span className="text-zinc-500">{item.count} ({Math.round((item.count / stats.totalComputers) * 100)}%)</span>
+                </div>
+                <div className="dist-bar">
                   <div
-                    className="h-full bg-sky-500 rounded-full"
+                    className="dist-bar-fill bg-gradient-to-r from-sky-500 to-cyan-400"
                     style={{ width: `${(item.count / stats.totalComputers) * 100}%` }}
                   />
                 </div>
-                <div className="w-8 text-right text-zinc-500">{item.count}</div>
               </div>
             ))}
           </div>
         </div>
 
-        <div className="card p-4">
-          <h3 className="text-sm font-medium text-zinc-300 mb-3">Distribuição por RAM</h3>
-          <div className="space-y-2">
+        <div className="card p-5">
+          <div className="section-header">
+            <Cpu className="h-4 w-4 text-sky-400" />
+            <h3 className="text-sm font-semibold text-zinc-200">Distribuição por RAM</h3>
+          </div>
+          <div className="space-y-3">
             {stats.ramDistribution.map((item) => (
-              <div key={item.ram} className="flex items-center gap-2 text-xs">
-                <div className="w-16 text-zinc-400">{item.ram}GB</div>
-                <div className="flex-1 h-1.5 bg-zinc-800 rounded-full overflow-hidden">
+              <div key={item.ram} className="space-y-1.5">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-zinc-300 font-medium">{item.ram}GB</span>
+                  <span className="text-zinc-500">{item.count} ({Math.round((item.count / stats.totalComputers) * 100)}%)</span>
+                </div>
+                <div className="dist-bar">
                   <div
-                    className="h-full bg-sky-500 rounded-full"
+                    className="dist-bar-fill bg-gradient-to-r from-sky-500 to-cyan-400"
                     style={{ width: `${(item.count / stats.totalComputers) * 100}%` }}
                   />
                 </div>
-                <div className="w-8 text-right text-zinc-500">{item.count}</div>
               </div>
             ))}
           </div>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="card p-4">
-          <h3 className="text-sm font-medium text-zinc-300 mb-3">Distribuição SO Aparelhos</h3>
-          <div className="space-y-2">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+        <div className="card p-5">
+          <div className="section-header">
+            <Smartphone className="h-4 w-4 text-purple-400" />
+            <h3 className="text-sm font-semibold text-zinc-200">Distribuição SO Aparelhos</h3>
+          </div>
+          <div className="space-y-3">
             {stats.deviceOsDistribution.slice(0, 5).map((item) => (
-              <div key={item.os} className="flex items-center gap-2 text-xs">
-                <div className="flex-1 truncate text-zinc-400">{item.os}</div>
-                <div className="w-20 h-1.5 bg-zinc-800 rounded-full overflow-hidden">
+              <div key={item.os} className="space-y-1.5">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-zinc-300 font-medium">{item.os}</span>
+                  <span className="text-zinc-500">{item.count} ({Math.round((item.count / stats.totalDevices) * 100)}%)</span>
+                </div>
+                <div className="dist-bar">
                   <div
-                    className="h-full bg-purple-500 rounded-full"
+                    className="dist-bar-fill bg-gradient-to-r from-purple-500 to-violet-400"
                     style={{ width: `${(item.count / stats.totalDevices) * 100}%` }}
                   />
                 </div>
-                <div className="w-8 text-right text-zinc-500">{item.count}</div>
               </div>
             ))}
           </div>
         </div>
 
-        <div className="card p-4">
-          <h3 className="text-sm font-medium text-zinc-300 mb-3">Últimos Aparelhos Atualizados</h3>
+        <div className="card p-5">
+          <div className="section-header">
+            <Smartphone className="h-4 w-4 text-purple-400" />
+            <h3 className="text-sm font-semibold text-zinc-200">Últimos Aparelhos Atualizados</h3>
+          </div>
           <div className="space-y-1">
             {stats.recentDevices.map((device) => (
-              <div key={device.name} className="flex items-center justify-between py-1.5 px-2 rounded hover:bg-zinc-900/50 text-xs">
-                <div className="flex items-center gap-2">
-                  <Smartphone className="h-3.5 w-3.5 text-purple-400" />
-                  <span className="font-medium">{device.name}</span>
-                  <span className="text-zinc-500">{device.manufacturer} {device.model}</span>
+              <div key={device.name} className="recent-item">
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="h-7 w-7 rounded-lg bg-purple-500/15 flex items-center justify-center flex-shrink-0">
+                    <Smartphone className="h-3.5 w-3.5 text-purple-400" />
+                  </div>
+                  <div className="min-w-0">
+                    <div className="text-xs font-medium text-zinc-200 truncate">{device.name}</div>
+                    <div className="text-[10px] text-zinc-500 truncate">{device.manufacturer} {device.model}</div>
+                  </div>
                 </div>
-                <div className="flex items-center gap-2 text-zinc-500">
-                  <span>{new Date(device.lastSeen).toLocaleDateString('pt-BR')}</span>
+                <div className="flex items-center gap-2 text-zinc-500 flex-shrink-0">
+                  <span className="text-[10px]">{new Date(device.lastSeen).toLocaleDateString('pt-BR')}</span>
                   <ChevronRight className="h-3 w-3" />
                 </div>
               </div>
@@ -252,18 +305,26 @@ export default function Dashboard({ onSelectCompany }: DashboardProps) {
         </div>
       </div>
 
-      <div className="card p-4">
-        <h3 className="text-sm font-medium text-zinc-300 mb-3">Últimos Computadores Atualizados</h3>
+      {/* Recent Computers */}
+      <div className="card p-5">
+        <div className="section-header">
+          <Monitor className="h-4 w-4 text-sky-400" />
+          <h3 className="text-sm font-semibold text-zinc-200">Últimos Computadores Atualizados</h3>
+        </div>
         <div className="space-y-1">
           {stats.recentComputers.map((comp) => (
-            <div key={comp.hostname} className="flex items-center justify-between py-1.5 px-2 rounded hover:bg-zinc-900/50 text-xs">
-              <div className="flex items-center gap-2">
-                <Monitor className="h-3.5 w-3.5 text-sky-400" />
-                <span className="font-medium">{comp.hostname}</span>
-                <span className="text-zinc-500">{comp.manufacturer} {comp.model}</span>
+            <div key={comp.hostname} className="recent-item">
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="h-7 w-7 rounded-lg bg-sky-500/15 flex items-center justify-center flex-shrink-0">
+                  <Monitor className="h-3.5 w-3.5 text-sky-400" />
+                </div>
+                <div className="min-w-0">
+                  <div className="text-xs font-medium text-zinc-200 truncate">{comp.hostname}</div>
+                  <div className="text-[10px] text-zinc-500 truncate">{comp.manufacturer} {comp.model}</div>
+                </div>
               </div>
-              <div className="flex items-center gap-2 text-zinc-500">
-                <span>{new Date(comp.lastSeen).toLocaleDateString('pt-BR')}</span>
+              <div className="flex items-center gap-2 text-zinc-500 flex-shrink-0">
+                <span className="text-[10px]">{new Date(comp.lastSeen).toLocaleDateString('pt-BR')}</span>
                 <ChevronRight className="h-3 w-3" />
               </div>
             </div>
@@ -271,16 +332,23 @@ export default function Dashboard({ onSelectCompany }: DashboardProps) {
         </div>
       </div>
 
+      {/* Problems Modal */}
       {activeFilter && FILTER_LABELS[activeFilter] && (
-        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-[100] p-6" onClick={() => setActiveFilter(null)}>
-          <div className="modal card w-full max-w-4xl max-h-[85vh] overflow-auto p-6 shadow-2xl shadow-black/50" onClick={e => e.stopPropagation()}>
-            <div className="flex justify-between items-center mb-5">
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-[100] p-6" onClick={() => setActiveFilter(null)}>
+          <div className="modal card w-full max-w-4xl max-h-[85vh] overflow-auto p-6 shadow-2xl shadow-black/60" onClick={e => e.stopPropagation()}>
+            <div className="flex justify-between items-center mb-6">
               <div className="flex items-center gap-3">
-                {React.createElement(FILTER_LABELS[activeFilter].icon, { className: `h-5 w-5 ${FILTER_LABELS[activeFilter].color}` })}
-                <h3 className="text-xl font-semibold glow-text">{FILTER_LABELS[activeFilter].title}</h3>
-                <span className="text-xs px-2.5 py-0.5 rounded-full bg-zinc-800 text-zinc-400">{filteredTotal} total</span>
+                <div className="h-9 w-9 rounded-xl bg-red-500/15 flex items-center justify-center">
+                  <AlertTriangle className="h-4.5 w-4.5 text-red-400" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-zinc-100">{FILTER_LABELS[activeFilter].title}</h3>
+                  <p className="text-xs text-zinc-500">{filteredTotal} itens com problemas</p>
+                </div>
               </div>
-              <button onClick={() => setActiveFilter(null)}><X className="h-5 w-5" /></button>
+              <button onClick={() => setActiveFilter(null)} className="h-8 w-8 rounded-lg bg-zinc-800/50 flex items-center justify-center hover:bg-zinc-700/50 transition-colors">
+                <X className="h-4 w-4 text-zinc-400" />
+              </button>
             </div>
 
             {loadingFilter ? (
@@ -298,13 +366,13 @@ export default function Dashboard({ onSelectCompany }: DashboardProps) {
                   <div key={group.company.id}>
                     <button
                       onClick={() => handleSelectComputer(group.company.id)}
-                      className="flex items-center gap-2 mb-2 group/company hover:text-sky-400 transition-colors"
+                      className="flex items-center gap-2 mb-3 group/company hover:text-sky-400 transition-colors"
                     >
                       <Building2 className="h-4 w-4 text-sky-400" />
-                      <span className="font-semibold text-sm">{group.company.name}</span>
-                      <span className="text-xs text-zinc-500">
-                        ({group.computers.length} PC{group.computers.length > 1 ? 's' : ''}
-                        {group.devices.length > 0 ? `, ${group.devices.length} Aparelho${group.devices.length > 1 ? 's' : ''}` : ''})
+                      <span className="font-semibold text-sm text-zinc-200">{group.company.name}</span>
+                      <span className="text-xs text-zinc-500 bg-zinc-800/50 px-2 py-0.5 rounded-full">
+                        {group.computers.length} PC{group.computers.length > 1 ? 's' : ''}
+                        {group.devices.length > 0 ? `, ${group.devices.length} Aparelho${group.devices.length > 1 ? 's' : ''}` : ''}
                       </span>
                       <ExternalLink className="h-3 w-3 text-zinc-600 group-hover/company:text-sky-400 transition-colors" />
                     </button>
@@ -313,13 +381,15 @@ export default function Dashboard({ onSelectCompany }: DashboardProps) {
                         <button
                           key={comp.id}
                           onClick={() => handleSelectComputer(group.company.id)}
-                          className="w-full flex items-center justify-between py-1.5 px-2 rounded hover:bg-zinc-900/50 text-xs text-left transition-colors group/row"
+                          className="w-full recent-item text-left group/row"
                         >
                           <div className="flex items-center gap-3 min-w-0">
-                            <Monitor className="h-3.5 w-3.5 text-zinc-500 flex-shrink-0" />
-                            <span className="font-medium truncate">{comp.hostname}</span>
-                            <span className="text-zinc-500 truncate hidden sm:inline">{comp.manufacturer} {comp.model}</span>
-                            {comp.ipAddress && <span className="font-mono text-zinc-600 hidden md:inline">{comp.ipAddress}</span>}
+                            <div className="h-6 w-6 rounded-md bg-sky-500/10 flex items-center justify-center flex-shrink-0">
+                              <Monitor className="h-3 w-3 text-sky-400" />
+                            </div>
+                            <span className="font-medium text-xs text-zinc-200 truncate">{comp.hostname}</span>
+                            <span className="text-zinc-500 text-[10px] truncate hidden sm:inline">{comp.manufacturer} {comp.model}</span>
+                            {comp.ipAddress && <span className="font-mono text-zinc-600 text-[10px] hidden md:inline">{comp.ipAddress}</span>}
                           </div>
                           <div className="flex items-center gap-2 text-zinc-500 flex-shrink-0">
                             {comp.disks && (
@@ -337,13 +407,15 @@ export default function Dashboard({ onSelectCompany }: DashboardProps) {
                         <button
                           key={device.id}
                           onClick={() => handleSelectComputer(group.company.id)}
-                          className="w-full flex items-center justify-between py-1.5 px-2 rounded hover:bg-zinc-900/50 text-xs text-left transition-colors group/row"
+                          className="w-full recent-item text-left group/row"
                         >
                           <div className="flex items-center gap-3 min-w-0">
-                            <Smartphone className="h-3.5 w-3.5 text-purple-400 flex-shrink-0" />
-                            <span className="font-medium truncate">{device.name}</span>
-                            <span className="text-zinc-500 truncate hidden sm:inline">{device.manufacturer} {device.model}</span>
-                            {device.ipAddress && <span className="font-mono text-zinc-600 hidden md:inline">{device.ipAddress}</span>}
+                            <div className="h-6 w-6 rounded-md bg-purple-500/10 flex items-center justify-center flex-shrink-0">
+                              <Smartphone className="h-3 w-3 text-purple-400" />
+                            </div>
+                            <span className="font-medium text-xs text-zinc-200 truncate">{device.name}</span>
+                            <span className="text-zinc-500 text-[10px] truncate hidden sm:inline">{device.manufacturer} {device.model}</span>
+                            {device.ipAddress && <span className="font-mono text-zinc-600 text-[10px] hidden md:inline">{device.ipAddress}</span>}
                           </div>
                           <div className="flex items-center gap-2 text-zinc-500 flex-shrink-0">
                             {device.warrantyExpiry && (
